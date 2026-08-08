@@ -1,0 +1,9 @@
+return {
+  ssh_hosts = {
+    {
+      key = 'e',
+      domain = 'example.invalid',
+      label = 'Example host',
+    },
+  },
+}

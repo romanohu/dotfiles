@@ -1,0 +1,19 @@
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Devbox / Nix
+.devbox/
+.nix-profile/
+
+# Node.js / Python
+node_modules/
+__pycache__/
+.venv/
+
+**/.claude/settings.local.json

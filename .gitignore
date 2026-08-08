@@ -1,0 +1,15 @@
+.config/zsh/.*
+.config/zsh/*
+.config/devbox/global/.devbox/
+.worktrees/
+.config/dotfiles/agents.local
+.config/dotfiles/agents.state/
+.config/dotfiles/agent-state/
+.config/wezterm/local.lua
+.codex/*
+!.codex/AGENTS.md
+.claude/*
+!.claude/CLAUDE.md
+
+!.config/zsh/.zshrc
+!.config/zsh/aliases.zsh

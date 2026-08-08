@@ -1,0 +1,5 @@
+# Copy this file to $XDG_CONFIG_HOME/dotfiles/agents.local.
+# Each non-comment line must contain a command name only.
+# Do not include API keys or command arguments.
+codex
+claude

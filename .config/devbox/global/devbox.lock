@@ -49,6 +49,44 @@
         }
       }
     },
+    "cargo@latest": {
+      "last_modified": "2026-08-01T16:34:20Z",
+      "resolved": "github:NixOS/nixpkgs/a5cbcfe954791221bfffe2307f7d1a1bf61a871e#cargo",
+      "source": "devbox-search",
+      "version": "1.97.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qxkwknjc7vxn3bgikxkpf0bzz76w1cwi-cargo-1.97.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/qxkwknjc7vxn3bgikxkpf0bzz76w1cwi-cargo-1.97.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/5a10b0byalr42xpsyklzmrsfgnknqjw6-cargo-1.97.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/5a10b0byalr42xpsyklzmrsfgnknqjw6-cargo-1.97.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/k72ws5y5hqp187dasmnfikm0hz5xy432-cargo-1.97.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/k72ws5y5hqp187dasmnfikm0hz5xy432-cargo-1.97.1"
+        }
+      }
+    },
     "dua@2.34.0": {
       "last_modified": "2026-05-21T08:15:18Z",
       "resolved": "github:NixOS/nixpkgs/4a29d733e8a7d5b824c3d8c958a946a9867b3eb2#dua",
@@ -807,7 +845,7 @@
     },
     "nodejs@24.12.0": {
       "last_modified": "2025-12-27T12:56:01Z",
-      "plugin_version": "0.0.3",
+      "plugin_version": "0.0.2",
       "resolved": "github:NixOS/nixpkgs/3edc4a30ed3903fdf6f90c837f961fa6b49582d1#nodejs_24",
       "source": "devbox-search",
       "version": "24.12.0",
@@ -1055,6 +1093,72 @@
             }
           ],
           "store_path": "/nix/store/806nba32b0dw0y96j8bvgz07li9p5qz9-ripgrep-15.1.0"
+        }
+      }
+    },
+    "rustc@latest": {
+      "last_modified": "2026-08-01T16:34:20Z",
+      "plugin_version": "0.0.1",
+      "resolved": "github:NixOS/nixpkgs/a5cbcfe954791221bfffe2307f7d1a1bf61a871e#rustc",
+      "source": "devbox-search",
+      "version": "1.97.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/30vxq1swhjzrxq29mvzhf0b4xcvqmzds-rustc-wrapper-1.97.1",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/6xcrb8jy3dgy5xmiqa0amq7v02vjsc7p-rustc-wrapper-1.97.1-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/288kqi06y566q39csv4n9p1kxhvaizka-rustc-wrapper-1.97.1-doc"
+            }
+          ],
+          "store_path": "/nix/store/30vxq1swhjzrxq29mvzhf0b4xcvqmzds-rustc-wrapper-1.97.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bda3jw7479qjdsbfzawki0742yrlj0nj-rustc-wrapper-1.97.1",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/q1n5pbzblksxq0dy037wqx6rnjc3lxw3-rustc-wrapper-1.97.1-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/zzc8w4yf4z4bkx2aypl7hlany6f5kqys-rustc-wrapper-1.97.1-doc"
+            }
+          ],
+          "store_path": "/nix/store/bda3jw7479qjdsbfzawki0742yrlj0nj-rustc-wrapper-1.97.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gf0kxr0014wbjmx5sh4mfjn83yabxkhw-rustc-wrapper-1.97.1",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/m14lki6gnq3klp6z1vhwzrscvvhg3hpz-rustc-wrapper-1.97.1-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/8iads8jv6j40bkhal548jf6d964kv35a-rustc-wrapper-1.97.1-doc"
+            }
+          ],
+          "store_path": "/nix/store/gf0kxr0014wbjmx5sh4mfjn83yabxkhw-rustc-wrapper-1.97.1"
         }
       }
     },

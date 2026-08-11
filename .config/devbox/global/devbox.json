@@ -83,7 +83,9 @@
         "x86_64-linux",
         "aarch64-linux"
       ]
-    }
+    },
+    "cargo": "latest",
+    "rustc": "latest"
   },
   "shell": {
     "init_hook": [

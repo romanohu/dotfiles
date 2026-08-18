@@ -13,3 +13,6 @@
 
 !.config/zsh/.zshrc
 !.config/zsh/aliases.zsh
+
+!.config/herdr/config.toml
+.config/herdr

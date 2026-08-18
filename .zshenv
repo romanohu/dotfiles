@@ -3,4 +3,3 @@ export ZDOTDIR="$HOME/.config/zsh"
 
 # uv
 export PATH="$HOME/.local/bin:$PATH"
-. "/private/tmp/pueueAgent-cargo-home/env"

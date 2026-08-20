@@ -38,6 +38,23 @@ test_shell_uses_mise_without_devbox_or_cargo_path() {
     assert_file_not_contains "$REPO_DIR/.zshenv" '.cargo/bin'
 }
 
+test_ci_runs_only_host_independent_checks() {
+    local workflow="$REPO_DIR/.github/workflows/validate.yml"
+
+    assert_file_contains "$workflow" 'actions/checkout@v4.2.2'
+    assert_file_contains "$workflow" 'bash tests/run.sh'
+    assert_file_contains "$workflow" \
+        'bash -n install.sh tests/test_helpers.sh tests/test_installer.sh tests/test_configuration.sh tests/test_mise_configuration.sh tests/test_runner.sh tests/run.sh'
+    assert_file_contains "$workflow" \
+        'zsh -n .zshenv .config/zsh/.zshrc .config/zsh/aliases.zsh'
+    assert_file_contains "$workflow" 'git diff --check'
+    assert_file_not_contains "$workflow" 'devbox'
+    assert_file_not_contains "$workflow" 'bin/ha'
+    assert_file_not_contains "$workflow" 'jq empty'
+    assert_file_not_contains "$workflow" 'mise install'
+    assert_file_not_contains "$workflow" 'mise bootstrap'
+}
+
 test_herdr_remains_without_ha_command() {
     local config="$REPO_DIR/.config/herdr/config.toml"
     assert_file_contains "$config" 'onboarding = false'
@@ -139,6 +156,7 @@ test_tracked_private_state_and_historical_wezterm_hosts_are_absent() {
 test_neovim_configuration_is_not_tracked
 test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
+test_ci_runs_only_host_independent_checks
 test_herdr_remains_without_ha_command
 test_removed_paths_are_not_active
 test_daily_shell_and_git_defaults_are_safe_and_pinned

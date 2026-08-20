@@ -43,4 +43,5 @@ rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,r
 "~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"
 
 [tasks.test]
+dir = "{{cwd}}"
 run = "bash tests/run.sh"

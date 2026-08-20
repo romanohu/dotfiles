@@ -139,7 +139,21 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
     assert_file_not_contains "$REPO_DIR/mise.toml" 'latest'
 }
 
+test_global_mise_test_task_runs_from_repository() {
+    [ "${DOTFILES_MISE_TASK_TEST_CHILD:-}" != 1 ] || return 0
+    [ -n "${DOTFILES_TEST_MISE_BIN:-}" ] || return 0
+    [ -n "${DOTFILES_TEST_MISE_HOME:-}" ] ||
+        fail 'DOTFILES_TEST_MISE_HOME is required with DOTFILES_TEST_MISE_BIN'
+
+    HOME="$DOTFILES_TEST_MISE_HOME" \
+        MISE_GLOBAL_CONFIG_FILE="$REPO_DIR/mise.toml" \
+        MISE_TASK_RUN_AUTO_INSTALL=false \
+        DOTFILES_MISE_TASK_TEST_CHILD=1 \
+        "$DOTFILES_TEST_MISE_BIN" -C "$REPO_DIR" run test
+}
+
 test_mise_tools_are_exact_and_complete
 test_mise_lock_has_supported_platform_artifacts
 test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact
+test_global_mise_test_task_runs_from_repository
 printf 'PASS: %s\n' "$(basename "$0")"

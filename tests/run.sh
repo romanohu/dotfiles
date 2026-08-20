@@ -21,7 +21,6 @@ for test_file in \
     "$TEST_DIR/test_configuration.sh" \
     "$TEST_DIR/test_mise_configuration.sh" \
     "$TEST_DIR/test_installer.sh" \
-    "$TEST_DIR/test_agent.sh" \
     "$TEST_DIR/test_runner.sh"; do
     run_test_file "$test_file"
 done
@@ -29,7 +28,7 @@ done
 for test_file in "$TEST_DIR"/test_*.sh; do
     [ -f "$test_file" ] || continue
     case "$(basename "$test_file")" in
-        test_helpers.sh|test_configuration.sh|test_mise_configuration.sh|test_installer.sh|test_agent.sh|test_runner.sh)
+        test_helpers.sh|test_configuration.sh|test_mise_configuration.sh|test_installer.sh|test_runner.sh)
             continue
             ;;
     esac

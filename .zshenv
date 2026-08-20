@@ -1,5 +1,3 @@
-# zshの設定ファイルを ~/.config/zsh に置くように指定
+export TZ=Asia/Tokyo
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 export ZDOTDIR="$HOME/.config/zsh"
-
-# uv
-export PATH="$HOME/.local/bin:$PATH"

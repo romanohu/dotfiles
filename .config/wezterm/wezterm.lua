@@ -38,7 +38,6 @@ config.keys = {
   { key = 'l', mods = 'LEADER|CTRL', action = act.ActivatePaneDirection 'Right' } ,
   { key = 'k', mods = 'LEADER|CTRL', action = act.ActivatePaneDirection 'Up' } ,
   { key = 'j', mods = 'LEADER|CTRL', action = act.ActivatePaneDirection 'Down' } ,
-  { key = 'N', mods = 'LEADER|SHIFT', action = act.SpawnCommandInNewTab { args = { 'herdr' } } },
   { key = 'c', mods = 'LEADER', action = act.QuickSelect }
 }
 

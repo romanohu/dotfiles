@@ -5,9 +5,6 @@ alias cdhome='cd $HOME'
 ### zsh
 alias sz='source $HOME/.config/zsh/.zshrc'
 
-### devbox
-alias cddev='cd $HOME/.local/share/devbox/global/default'
-
 ### git
 alias gc-b='git checkout -b'
 alias gc-m='git commit -m'

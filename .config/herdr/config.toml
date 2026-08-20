@@ -3,10 +3,5 @@ onboarding = false
 default_shell = "zsh"
 new_cwd = "follow"
 
-[[keys.command]]
-key = "prefix+a"
-command = "ha"
-description = "add one generic agent pane"
-
 [ui]
 agent_panel_sort = "spaces"

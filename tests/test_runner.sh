@@ -49,15 +49,15 @@ test_runner_fails_when_no_test_files_execute() {
     esac
 }
 
-test_installer_ignores_inherited_devbox_data_dir() {
+test_installer_ignores_inherited_mise_global_config_file() {
     local output
 
-    if ! output=$(DEVBOX_DATA_DIR=/tmp/preexisting-devbox-data bash "$TEST_DIR/test_installer.sh"); then
-        fail "installer isolation test inherited DEVBOX_DATA_DIR: $output"
+    if ! output=$(MISE_GLOBAL_CONFIG_FILE=/tmp/unrelated-mise.toml bash "$TEST_DIR/test_installer.sh"); then
+        fail "installer isolation test inherited MISE_GLOBAL_CONFIG_FILE: $output"
     fi
 }
 
 test_runner_uses_cdpath_without_skipping_tests
 test_runner_fails_when_no_test_files_execute
-test_installer_ignores_inherited_devbox_data_dir
+test_installer_ignores_inherited_mise_global_config_file
 printf 'PASS: %s\n' "$(basename "$0")"

@@ -67,7 +67,7 @@ the source for the global mise configuration.
 cannot execute before mise exists. It has these responsibilities only:
 
 1. Resolve the physical repository path and target home.
-2. Accept macOS and Linux and verify that Bash, curl, Git, Zsh, and either
+2. Accept macOS and Linux and verify that Bash, curl, Git, tar, Zsh, and either
    `sha256sum` or `shasum` are available.
 3. Download the immutable mise installer to a private temporary path.
 4. Verify its SHA-256 before executing it.
@@ -308,7 +308,7 @@ change the full commit ref and run the same tests. No update workflow uses
 
 The README is rewritten around the mise-only workflow. It documents:
 
-- Git, Zsh, curl, and a SHA-256 utility as prerequisites;
+- Git, Zsh, Bash, curl, tar, and a SHA-256 utility as prerequisites;
 - user-scoped installation and the absence of root requirements;
 - macOS and Linux support, with ABCI usage after Zsh is available;
 - the exact tool list and deliberately unmanaged or removed tools;

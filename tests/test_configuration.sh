@@ -55,6 +55,9 @@ test_removed_paths_are_not_active() {
     assert_path_missing "$REPO_DIR/.config/wezterm/local.lua.example"
     assert_path_missing "$REPO_DIR/bin/ha"
     assert_path_missing "$REPO_DIR/tests/test_agent.sh"
+    if grep -F -x -q -- '.config/wezterm/local.lua' "$REPO_DIR/.gitignore"; then
+        fail 'WezTerm local configuration must not be ignored'
+    fi
     assert_file_not_contains "$REPO_DIR/.config/wezterm/wezterm.lua" \
         'SpawnCommandInNewTab'
 }
@@ -92,6 +95,9 @@ test_wezterm_keeps_portable_visual_and_startup_behavior() {
     assert_file_not_contains "$config" "{ key = 's', mods = 'LEADER'"
     assert_file_not_contains "$config" 'split_current_pane'
     assert_file_not_contains "$config" 'pane:split'
+    assert_file_not_contains "$config" 'SplitPane'
+    assert_file_not_contains "$config" "{ key = 'v', mods = 'LEADER',"
+    assert_file_not_contains "$config" "{ key = 'b', mods = 'LEADER',"
     assert_file_not_contains "$config" 'ActivatePaneDirection'
     assert_file_not_contains "$config" 'pcall(dofile'
     assert_file_not_contains "$config" 'local_config'

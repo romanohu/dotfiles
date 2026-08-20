@@ -126,7 +126,6 @@ The exact tool set is:
 | starship | `1.24.2` | mise registry |
 | fzf | `0.71.0` | mise registry |
 | ripgrep | `15.1.0` | mise registry |
-| eza | `0.23.4` | `github:eza-community/eza` |
 | bat | `0.26.1` | mise registry |
 | fd | `10.4.2` | mise registry |
 | gh | `2.89.0` | mise registry |
@@ -134,7 +133,7 @@ The exact tool set is:
 | tmux | `3.6a` | mise registry |
 | pueue | `4.0.4` | `github:Nukesor/pueue` |
 | git-lfs | `3.7.1` | mise registry |
-| dua | `2.34.0` | mise registry |
+| dua | `2.34.0` | `cargo:dua-cli`, depends on `rust` |
 | viddy | `1.3.0` | mise registry |
 | jq | `1.7.1` | mise registry |
 | node | `24.12.0` | mise core |
@@ -144,7 +143,8 @@ The exact tool set is:
 
 The Rust entry uses the minimal profile and requests `clippy`, `rustfmt`, and
 `rust-analyzer`. Cargo and rustc come from that toolchain and are not separate
-tool entries.
+tool entries. `dua` is built through Cargo after the configured Rust tool is
+available, so it has no per-platform release artifact entries in the lockfile.
 
 The mise Rust backend uses rustup internally. The exact toolchain and component
 set are recorded, but the Rust distribution URLs and checksums are not emitted
@@ -329,7 +329,7 @@ tools, and the existing helper patterns.
 Configuration tests verify:
 
 - the exact mise installer pin;
-- the exact 18-tool set and version values;
+- the exact 17-tool set and version values;
 - the explicit Rust profile and components;
 - the three lockfile platforms and required platform URLs/checksums, with
   explicit backend-specific exceptions;
@@ -388,7 +388,7 @@ with an unmanaged conflicting target must fail without changing that target.
 1. The repository has no active Nix, Devbox, `ha`, or removed-package path.
 2. `./install.sh` can start from a macOS or Linux user account with Git and Zsh
    but without mise or root privileges.
-3. All 18 managed tools resolve to the exact declared versions on the three
+3. All 17 managed tools resolve to the exact declared versions on the three
    supported platforms; Rust exposes Cargo, rustc, Clippy, rustfmt, and
    rust-analyzer from toolchain `1.97.1`.
 4. Correct existing state is skipped on a second run.

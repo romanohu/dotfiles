@@ -19,24 +19,9 @@ checksum = "sha256:e30beff26779c9bf60bb541e1d79046250cb74378f2757f8eb250afddb19e
 url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/bat/releases/assets/323548442"
 
-[[tools.dua]]
+[[tools."cargo:dua-cli"]]
 version = "2.34.0"
-backend = "aqua:Byron/dua-cli"
-
-[tools.dua."platforms.linux-arm64"]
-checksum = "sha256:d77a07e3aa1af12cfd9a60ace5a15395af96040089ba358df76d1621d12b1893"
-url = "https://github.com/Byron/dua-cli/releases/download/v2.34.0/dua-v2.34.0-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Byron/dua-cli/releases/assets/359055965"
-
-[tools.dua."platforms.linux-x64"]
-checksum = "sha256:4f2de3f97206d6bca0d15fbb9241f52b1014df35fd7ae362bacf67371164c1a1"
-url = "https://github.com/Byron/dua-cli/releases/download/v2.34.0/dua-v2.34.0-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Byron/dua-cli/releases/assets/359055798"
-
-[tools.dua."platforms.macos-arm64"]
-checksum = "sha256:c1b346360d0eabee17d43c03e4820fb097e9c334f07dd77708a44355f7b887e7"
-url = "https://github.com/Byron/dua-cli/releases/download/v2.34.0/dua-v2.34.0-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Byron/dua-cli/releases/assets/359055772"
+backend = "cargo:dua-cli"
 
 [[tools.fd]]
 version = "10.4.2"
@@ -135,25 +120,6 @@ url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285200"
 checksum = "sha256:7780dbd21e3a4106e88a57396d6dc2dbcbbae253c7e00d92d994902896b8cb82"
 url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-aarch64-apple-darwin"
 url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285312"
-
-[[tools."github:eza-community/eza"]]
-version = "0.23.4"
-backend = "github:eza-community/eza"
-
-[tools."github:eza-community/eza"."platforms.linux-arm64"]
-checksum = "sha256:366e8430225f9955c3dc659b452150c169894833ccfef455e01765e265a3edda"
-url = "https://github.com/eza-community/eza/releases/download/v0.23.4/eza_aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/eza-community/eza/releases/assets/300249822"
-
-[tools."github:eza-community/eza"."platforms.linux-x64"]
-checksum = "sha256:0c38665440226cd8bef5d1d4f3bc6ff77c927fb0d68b752739105db7ab5b358d"
-url = "https://github.com/eza-community/eza/releases/download/v0.23.4/eza_x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/eza-community/eza/releases/assets/300249830"
-
-[tools."github:eza-community/eza"."platforms.macos-arm64"]
-checksum = "sha256:afcf804979ba03df7545e8b02d41576ab5e15bd090dfc51a052f41df3a65b264"
-url = "https://github.com/eza-community/eza/releases/download/v0.23.4/man-0.23.4.tar.gz"
-url_api = "https://api.github.com/repos/eza-community/eza/releases/assets/300249834"
 
 [[tools.herdr]]
 version = "0.7.5"

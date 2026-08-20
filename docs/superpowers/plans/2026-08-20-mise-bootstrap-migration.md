@@ -15,7 +15,7 @@
   SHA-256 utility for bootstrap; never invoke a system package manager or sudo.
 - Install mise `2026.8.9` from `https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh` with SHA-256 `0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403`.
 - Keep exact tool versions and lock `macos-arm64`, `linux-x64`, and `linux-arm64`.
-- Manage exactly 18 tools; do not manage `git`, `zsh`, `htop`, `hwloc`, `tree`, `xclip`, `nvtop`, or `navi`.
+- Manage exactly 17 tools; do not manage `git`, `zsh`, `htop`, `hwloc`, `tree`, `xclip`, `nvtop`, `navi`, or `eza`.
 - Manage Rust `1.97.1` with the minimal profile and `clippy,rustfmt,rust-analyzer`.
 - Keep Herdr `0.7.5`; remove `ha` and every active `ha` integration.
 - Do not uninstall Nix, Devbox, `htop`, or any system software.
@@ -131,7 +131,6 @@ test_mise_tools_are_exact_and_complete() {
         'starship = "1.24.2"' \
         'fzf = "0.71.0"' \
         'ripgrep = "15.1.0"' \
-        '"github:eza-community/eza" = "0.23.4"' \
         'bat = "0.26.1"' \
         'fd = "10.4.2"' \
         'gh = "2.89.0"' \
@@ -139,7 +138,7 @@ test_mise_tools_are_exact_and_complete() {
         'tmux = "3.6a"' \
         '"github:Nukesor/pueue" = "4.0.4"' \
         'git-lfs = "3.7.1"' \
-        'dua = "2.34.0"' \
+        '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }' \
         'viddy = "1.3.0"' \
         'jq = "1.7.1"' \
         'node = "24.12.0"' \
@@ -155,13 +154,12 @@ test_mise_lock_has_supported_platform_artifacts() {
 
     expected=$(printf '%s\n' \
         $'bat\t0.26.1' \
-        $'dua\t2.34.0' \
+        $'cargo:dua-cli\t2.34.0' \
         $'fd\t10.4.2' \
         $'fzf\t0.71.0' \
         $'gh\t2.89.0' \
         $'git-lfs\t3.7.1' \
         $'github:Nukesor/pueue\t4.0.4' \
-        $'github:eza-community/eza\t0.23.4' \
         $'herdr\t0.7.5' \
         $'jq\t1.7.1' \
         $'node\t24.12.0' \
@@ -176,15 +174,19 @@ test_mise_lock_has_supported_platform_artifacts() {
     assert_eq "$expected" "$actual" \
         'mise.lock must pin the exact configured tool names and versions'
 
-    assert_eq '18' "$(grep -c '^\[\[tools\.' "$lock")" \
+    assert_eq '17' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
-        assert_eq '17' \
+        assert_eq '15' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
-            "all downloadable tools must lock $platform"
+            "all ordinary downloadable tools must lock $platform"
     done
-    assert_eq '51' "$(grep -c '^url = "https://' "$lock")" \
-        '17 downloadable tools times 3 platforms must have URLs'
+    assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
+        '15 ordinary downloadable tools times 3 platforms must have URLs'
+    assert_file_contains "$lock" '[[tools."cargo:dua-cli"]]'
+    assert_file_contains "$lock" 'backend = "cargo:dua-cli"'
+    assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'
+    assert_file_not_contains "$lock" '[tools.rust."platforms.'
     assert_file_contains "$lock" '[[tools.rust]]'
     assert_file_contains "$lock" 'components = "clippy,rust-analyzer,rustfmt"'
     assert_file_contains "$lock" 'profile = "minimal"'
@@ -216,6 +218,9 @@ for mapping in \
     assert_file_contains "$REPO_DIR/mise.toml" "$mapping"
 done
 assert_file_not_contains "$REPO_DIR/mise.toml" '--force-dotfiles'
+assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
+assert_file_contains "$REPO_DIR/mise.toml" \
+    '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }'
 ```
 
 Also assert the global settings:
@@ -263,7 +268,6 @@ dotfiles.default_mode = "symlink"
 starship = "1.24.2"
 fzf = "0.71.0"
 ripgrep = "15.1.0"
-"github:eza-community/eza" = "0.23.4"
 bat = "0.26.1"
 fd = "10.4.2"
 gh = "2.89.0"
@@ -271,7 +275,7 @@ uv = "0.11.6"
 tmux = "3.6a"
 "github:Nukesor/pueue" = "4.0.4"
 git-lfs = "3.7.1"
-dua = "2.34.0"
+"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }
 viddy = "1.3.0"
 jq = "1.7.1"
 node = "24.12.0"
@@ -336,12 +340,14 @@ MISE_GLOBAL_CONFIG_FILE="$PWD/mise.toml" \
 Expected summary:
 
 ```text
-Processing 18 tool(s)
+Processing 17 tool(s)
 Lockfile written to .../mise.lock
 ```
 
-Inspect the diff. It must contain 18 tool entries, 51 platform URLs, no `navi`,
-and the Rust options. Do not hand-edit resolved URLs or checksums.
+Inspect the diff. It must contain 17 tool entries, 45 platform URLs for the 15
+ordinary downloadable tools, no `navi` or `eza`, and the Rust options. The
+Cargo-built `dua` and Rust entries are explicit no-platform-URL exceptions. Do
+not hand-edit resolved URLs or checksums.
 
 - [ ] **Step 5: Run the focused tests and static TOML validation**
 
@@ -352,7 +358,7 @@ bash tests/test_mise_configuration.sh
 ```
 
 Expected: the test exits 0. Together with Step 4, this proves that the tracked
-configuration parses, the dry run lists all 18 exact versions, and no locked
+configuration parses, the dry run lists all 17 exact versions, and no locked
 artifact URL is missing.
 
 - [ ] **Step 6: Commit the declarative configuration**
@@ -904,7 +910,7 @@ run the bootstrap in an interactive compute environment according to site
 policy after the Zsh request is approved; do not claim support for changing the
 login shell.
 
-List the 18 managed tools and exact Rust components. State explicitly:
+List the 17 managed tools and exact Rust components. State explicitly:
 
 - `htop` is unmanaged;
 - `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed;
@@ -1002,7 +1008,7 @@ HOME="$MISE_PARSE_HOME" MISE_GLOBAL_CONFIG_FILE="$PWD/mise.toml" \
     "$MISE_VERIFY_BIN" -C "$PWD" run test
 ```
 
-Expected: configuration loads once, all 18 tools resolve, dry runs report no
+Expected: configuration loads once, all 17 tools resolve, dry runs report no
 missing platform URL, and the test task passes.
 
 - [ ] **Step 3: Run a real isolated-home bootstrap twice**
@@ -1052,7 +1058,7 @@ Rerun it with tracing only if needed:
 bash -x tests/test_installer.sh
 ```
 
-Do not run another full 18-tool install merely to reproduce a dotfile conflict.
+Do not run another full 17-tool install merely to reproduce a dotfile conflict.
 Expected: regular files and unrelated symlinks remain byte-for-byte unchanged.
 
 - [ ] **Step 6: Inspect the final repository and commit any verified correction**

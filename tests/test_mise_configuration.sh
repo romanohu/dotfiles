@@ -45,7 +45,6 @@ test_mise_tools_are_exact_and_complete() {
         'starship = "1.24.2"' \
         'fzf = "0.71.0"' \
         'ripgrep = "15.1.0"' \
-        '"github:eza-community/eza" = "0.23.4"' \
         'bat = "0.26.1"' \
         'fd = "10.4.2"' \
         'gh = "2.89.0"' \
@@ -53,7 +52,7 @@ test_mise_tools_are_exact_and_complete() {
         'tmux = "3.6a"' \
         '"github:Nukesor/pueue" = "4.0.4"' \
         'git-lfs = "3.7.1"' \
-        'dua = "2.34.0"' \
+        '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }' \
         'viddy = "1.3.0"' \
         'jq = "1.7.1"' \
         'node = "24.12.0"' \
@@ -69,13 +68,12 @@ test_mise_lock_has_supported_platform_artifacts() {
 
     expected=$(printf '%s\n' \
         $'bat\t0.26.1' \
-        $'dua\t2.34.0' \
+        $'cargo:dua-cli\t2.34.0' \
         $'fd\t10.4.2' \
         $'fzf\t0.71.0' \
         $'gh\t2.89.0' \
         $'git-lfs\t3.7.1' \
         $'github:Nukesor/pueue\t4.0.4' \
-        $'github:eza-community/eza\t0.23.4' \
         $'herdr\t0.7.5' \
         $'jq\t1.7.1' \
         $'node\t24.12.0' \
@@ -90,15 +88,19 @@ test_mise_lock_has_supported_platform_artifacts() {
     assert_eq "$expected" "$actual" \
         'mise.lock must pin the exact configured tool names and versions'
 
-    assert_eq '18' "$(grep -c '^\[\[tools\.' "$lock")" \
+    assert_eq '17' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
-        assert_eq '17' \
+        assert_eq '15' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
-            "all downloadable tools must lock $platform"
+            "all ordinary downloadable tools must lock $platform"
     done
-    assert_eq '51' "$(grep -c '^url = "https://' "$lock")" \
-        '17 downloadable tools times 3 platforms must have URLs'
+    assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
+        '15 ordinary downloadable tools times 3 platforms must have URLs'
+    assert_file_contains "$lock" '[[tools."cargo:dua-cli"]]'
+    assert_file_contains "$lock" 'backend = "cargo:dua-cli"'
+    assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'
+    assert_file_not_contains "$lock" '[tools.rust."platforms.'
     assert_file_contains "$lock" '[[tools.rust]]'
     assert_file_contains "$lock" 'components = "clippy,rust-analyzer,rustfmt"'
     assert_file_contains "$lock" 'profile = "minimal"'
@@ -127,6 +129,9 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
         assert_file_contains "$REPO_DIR/mise.toml" "$mapping"
     done
     assert_file_not_contains "$REPO_DIR/mise.toml" '--force-dotfiles'
+    assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
+    assert_file_contains "$REPO_DIR/mise.toml" \
+        '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }'
     assert_file_contains "$REPO_DIR/mise.toml" 'min_version = "2026.8.9"'
     assert_file_contains "$REPO_DIR/mise.toml" 'locked = true'
     assert_file_contains "$REPO_DIR/mise.toml" \

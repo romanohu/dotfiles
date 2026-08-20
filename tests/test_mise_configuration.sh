@@ -136,6 +136,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
     assert_file_contains "$REPO_DIR/mise.toml" 'locked = true'
     assert_file_contains "$REPO_DIR/mise.toml" \
         'lockfile_platforms = ["macos-arm64", "linux-x64", "linux-arm64"]'
+    assert_file_contains "$REPO_DIR/mise.toml" 'dir = "{{cwd}}"'
     assert_file_not_contains "$REPO_DIR/mise.toml" 'latest'
 }
 

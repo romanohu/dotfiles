@@ -1,227 +1,158 @@
 # dotfiles
 
-Personal dotfiles for reproducible machine setup with Nix + devbox.
+Personal dotfiles for reproducible macOS and Linux setup with mise.
 
-## Prerequisites
+## Requirements
 
-The first-run CLI prerequisites are bash, curl, and git. SHA-256 verification
-additionally requires sha256sum or shasum. Graphical terminal configuration
-requires WezTerm. JetBrains Mono is the preferred font; Menlo and the system
-monospace font are configured as fallbacks, so installing JetBrains Mono is
-optional.
+Git and Zsh are preinstalled prerequisites. Bootstrap also requires Bash,
+curl, tar, and sha256sum or shasum. The installer verifies the pinned mise 2026.8.9
+installer, places mise under `~/.local/bin`, and runs without root privileges
+or sudo. macOS on Apple silicon and Linux on x86_64 and aarch64 are supported.
 
-## What `install.sh` does
+WezTerm is optional. Its configured font preference is JetBrains Mono, with
+Menlo and the system monospace font as fallbacks.
 
-`./install.sh` is designed to finish setup in one run.
-
-1. Installs `nix` if missing (skips if already installed)
-2. Installs `devbox` if missing (skips if already installed)
-3. Links the managed shell and application dotfiles into `$HOME` safely (backs up existing files)
-4. Links devbox global config and runs `devbox global install`
-5. Installs Oh My Zsh and plugins if missing (skips if already installed)
-6. Installs the pinned global command-line tools for the current platform
-
-The script is idempotent: you can run it multiple times. Before replacing a
-managed path, it moves the previous content under
-`$HOME/.dotfiles-backup/<run-id>/`. It never deletes editor state, including
-Neovim state, data, and cache directories.
-
-## Platform support
-
-- macOS and Linux are supported. Devbox selects the matching pinned packages
-  for Apple silicon, x86_64 Linux, or aarch64 Linux.
-- Windows is supported for CLI setup through WSL. Windows-hosted WezTerm configuration is not installed from WSL.
-- Native Windows shells are not supported for automatic Nix installation.
-
-## Quick start
+## Install
 
 ```sh
-git clone https://github.com/romanohu/dotfiles.git
-cd dotfiles
-chmod +x install.sh
+git clone <repository-url> ~/dotfiles
+cd ~/dotfiles
 ./install.sh
+exec zsh
 ```
 
-If this is the first Nix/devbox installation, restart your shell once after setup.
+The bootstrap installs the pinned mise release when necessary, links the
+managed dotfiles, clones the pinned Zsh framework and plugin sources, and
+installs the locked tools for the current platform. It is safe to rerun after
+a successful installation.
 
-## Herdr
+## Supported and managed tools
 
-Start or reattach the managed Herdr session from a project directory:
+mise manages these 17 tools:
+
+- starship 1.24.2, fzf 0.71.0, ripgrep 15.1.0, bat 0.26.1, fd 10.4.2, and gh
+  2.89.0;
+- uv 0.11.6, tmux 3.6a, pueue 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
+  node 24.12.0, zoxide 0.9.8, and Herdr 0.7.5;
+- dua 2.34.0, built from source by Cargo as `cargo:dua-cli`; and
+- Rust 1.97.1 with the minimal profile and the exact `clippy`, `rustfmt`, and
+  `rust-analyzer` components.
+
+`htop` is unmanaged by this repository. `eza`, `hwloc`, `tree`, `xclip`,
+`nvtop`, and `navi` were removed and are not installation targets.
+
+Most managed tools have per-platform artifact URLs and checksums in
+`mise.lock`. Rust uses mise's core rustup backend, and dua is source-built by
+Cargo after that pinned Rust installation; therefore those two do not have
+per-platform distribution URL/checksum entries in `mise.lock`. The lockfile
+does not promise that every managed tool is a prebuilt artifact.
+
+## ABCI and other managed Linux hosts
+
+On ABCI, request Zsh through the site process first. Once the request is
+approved, run the bootstrap in an interactive compute environment according to
+site policy. This repository does not change or control the login shell.
+
+For other managed Linux hosts, use the same process only where local policy
+allows a user-owned installation under the home directory. The installer does
+not require administrator access.
+
+## Existing-file conflicts
+
+The installer does not uninstall existing system tools, Nix installations, or
+Devbox installations. It also does not uninstall other existing tool copies.
+
+An unmanaged dotfile conflict stops bootstrap. Move or back up that file
+manually, then rerun `./install.sh`; the installer will not overwrite it on
+your behalf. It does not edit `~/.profile`.
+
+## Shell and Herdr usage
+
+Open a new shell with Zsh after installation. zoxide enables `z` in an
+interactive Zsh shell when it is available. The `gcof` and `glogf` helpers use
+fzf when available and otherwise return without changing state.
+
+Start or reattach a project session with:
 
 ```sh
 herdr
 ```
 
-Press `Ctrl+B`, then `q` to detach while keeping the session running. Run
-`herdr` again to reattach. Create a project workspace explicitly when needed:
+Create a workspace explicitly when needed:
 
 ```sh
 herdr workspace create --cwd /path/to/project --label project
 ```
 
-New panes follow the active directory. Press `Ctrl+A`, then `Shift+N` in WezTerm to open Herdr in a new tab.
-Press `Ctrl+B`, then `Shift+N` in Herdr to create a workspace.
-Press `Ctrl+B`, then `W` in Herdr to switch or list workspaces.
-Press `Ctrl+B`, then `a` in Herdr to run `ha`.
+Herdr uses the active directory. Agent integrations and credentials remain
+manual and user-owned.
 
-To add one generic agent pane to the current project workspace, use `ha` and
-select a locally configured command. Pass one explicitly when useful:
+## WezTerm visual settings
 
-```sh
-ha
-ha codex
-ha claude
-```
-
-The allowlist is local-only at `$XDG_CONFIG_HOME/dotfiles/agents.local` (or
-`$HOME/.config/dotfiles/agents.local`): use one command name per line. It is
-not tracked or installed by this repository.
-
-Agent integrations are manual and optional. This repository does not install
-them or manage agent credentials.
-
-## Daily shell and Git helpers
-
-The pinned `zoxide` package enables `z` in Zsh when it is available. The
-`gcof` helper interactively selects a local branch with `fzf` and switches to
-it; `glogf` selects a commit and shows it. Both return without changing state
-when `fzf` is unavailable, the shell is non-interactive, or no item is chosen.
-
-## Agent guidance boundaries
-
-The installer manages only the public instruction files in `$HOME/.codex` and
-`$HOME/.claude`, one file at a time. Existing runtime state and unrelated
-settings remain user-owned. Add a setting or hook only after its exact public
-schema and content have been reviewed.
-
-## Continuous validation
-
-GitHub Actions runs the same host-independent checks as `bash tests/run.sh`:
-shell syntax, JSON parsing, and whitespace validation. It does not install or
-run Devbox, Nix, Herdr, or agent commands, and it does not require secrets.
-Run the same command locally before submitting changes.
-
-## Local WezTerm settings
-
-The tracked WezTerm configuration contains only portable settings. To add SSH
-tab bindings for this machine, copy the example and replace its placeholder
-host with entries from your local SSH configuration:
-
-```sh
-cp /path/to/dotfiles/.config/wezterm/local.lua.example ~/.config/wezterm/local.lua
-```
-
-`local.lua` is ignored by Git. Each `ssh_hosts` entry needs a `key`, `domain`,
-and `label`; the installer uses the domain only to create the WezTerm SSH tab
-binding. Keep real hostnames in this local file.
-
-Existing installations that used the old managed WezTerm directory symlink are
-migrated to a real `$HOME/.config/wezterm` directory. The old symlink is backed
-up under `$HOME/.dotfiles-backup/<run-id>/.config/wezterm`.
+The tracked WezTerm configuration contains portable visual settings: the
+Solarized dark color scheme, font fallbacks, transparency, tab-bar appearance,
+and resizable window decorations. On GUI startup it opens a window and
+maximizes it. These settings apply equally on supported machines and do not
+contain machine-specific host configuration.
 
 ## Tests
 
-Run the complete repository suite through the pinned environment:
+Run the complete offline repository suite with the pinned environment:
 
 ```sh
-devbox run --config .config/devbox/global test
+mise run test
 ```
 
-The test entrypoint resolves the physical repository path, so the same command
-also works when Devbox uses the global configuration symlink.
+The test entrypoint resolves the physical repository path and performs only
+host-independent checks; it does not install tools or require secrets.
 
-To verify that the suite does not depend on host tools, run it in Devbox's pure
-environment:
+## Updating pins
+
+Review version changes and their upstream release material first. Update the
+relevant exact version in `mise.toml`, regenerate all supported platform
+entries, install only from the resulting lockfile, and run the suite:
 
 ```sh
-devbox run --pure --config .config/devbox/global test
+mise lock --platform macos-arm64,linux-x64,linux-arm64
+mise install --locked
+mise run test
 ```
 
-## Updating pinned dependencies
+Commit `mise.toml` and the regenerated `mise.lock` together. Keep the mise
+installer version and checksum in `install.sh` aligned with a reviewed mise
+release, verifying the downloaded installer checksum before committing any
+change.
 
-Edit the package's exact version in `.config/devbox/global/devbox.json`, then
-regenerate `.config/devbox/global/devbox.lock` and run the tests:
+## Rust notes
+
+mise uses rustup for its core Rust backend. This backend does not add Rust
+distribution URL or checksum entries to `mise.lock`; the pinned version,
+profile, and components live in `mise.toml`. Cargo builds dua after Rust is
+installed, so it likewise has no per-platform artifact URL in the lockfile.
+
+If an older Rust setup left a stale profile line, review it manually before
+changing anything. Make a backup, edit the file, and remove only a line that
+sources a nonexistent old rustup environment:
 
 ```sh
-devbox install --config .config/devbox/global
-devbox run --config .config/devbox/global test
+cp ~/.profile ~/.profile.dotfiles-backup
+${EDITOR:-vi} ~/.profile
 ```
 
-Herdr is pinned as the release-tagged flake
-`github:ogulcancelik/herdr/v0.7.5`. Its Devbox lock entry is a
-platform-independent revision, so it can be updated once from any supported
-platform (`aarch64-darwin`, `x86_64-linux`, or `aarch64-linux`). Change the tag
-in `devbox.json`, then replace `vX.Y.Z` below with that same exact tag:
-
-```sh
-devbox update 'github:ogulcancelik/herdr/vX.Y.Z' --no-install --config .config/devbox/global
-```
-
-Rerun the tests after the lock update. Do not run `herdr update` for this
-Nix/Devbox-managed installation.
-
-When updating the Linux-only `nvtopPackages.full` pin from another platform,
-resolve its Linux lock entry without installing it:
-
-```sh
-NIX_CONFIG='system = x86_64-linux' devbox update nvtopPackages.full --no-install --config .config/devbox/global
-```
-
-The installer also has exact bootstrap and source pins in `install.sh`. Update
-each related group atomically:
-
-- For Determinate Nix, change `NIX_INSTALLER_URL` to the official version-tag
-  URL and `NIX_INSTALLER_SHA256` to the digest of that exact script. Fetch the
-  official script again and verify the digest before committing:
-
-  ```sh
-  curl -fL --proto '=https' --tlsv1.2 \
-    https://install.determinate.systems/nix/tag/<version>/nix-installer.sh \
-    -o /tmp/nix-installer.sh
-  sha256sum /tmp/nix-installer.sh
-  # macOS alternative:
-  shasum -a 256 /tmp/nix-installer.sh
-  ```
-
-  Confirm that the printed digest is exactly `NIX_INSTALLER_SHA256`.
-- For Devbox, update `DEVBOX_VERSION` and `DEVBOX_FLAKE` to the same release.
-  Update the schema version in `.config/devbox/global/devbox.json` at the same
-  time.
-- For the shell sources, update `OH_MY_ZSH_COMMIT`,
-  `ZSH_AUTOSUGGESTIONS_COMMIT`, and `ZSH_SYNTAX_HIGHLIGHTING_COMMIT` to reviewed
-  full commit SHAs from their upstream repositories.
-
-Run every test path after changing any pin:
-
-```sh
-bash tests/run.sh
-devbox run --config .config/devbox/global test
-devbox run --pure --config .config/devbox/global test
-```
-
-Commit `install.sh`, the manifest, and the regenerated lockfile together when
-their pins change.
-
-## History rewrite notice
-
-After a published `main` history rewrite, existing clones must re-clone or
-explicitly reset to the rewritten `main`. Old objects may remain in forks, mirrors, pull request refs, and hosting-provider caches outside this repository's control.
+`install.sh` never edits this file.
 
 ## Repository layout
 
 ```text
 .
 ├── .config
-│   ├── devbox
-│   │   └── global
-│   │       ├── devbox.json
-│   │       ├── devbox.lock
-│   │       └── run-tests.sh
 │   ├── git
 │   ├── herdr
 │   ├── wezterm
 │   └── zsh
 ├── .zshenv
 ├── install.sh
+├── mise.lock
+├── mise.toml
 └── README.md
 ```

@@ -66,6 +66,47 @@ test_herdr_remains_without_ha_command() {
     assert_file_not_contains "$config" 'command = "ha"'
 }
 
+test_readme_documents_mise_setup_and_boundaries() {
+    local readme="$REPO_DIR/README.md"
+
+    assert_file_contains "$readme" 'mise 2026.8.9'
+    assert_file_contains "$readme" 'Git and Zsh'
+    assert_file_contains "$readme" 'curl'
+    assert_file_contains "$readme" 'tar'
+    assert_file_contains "$readme" 'sha256sum or shasum'
+    assert_file_contains "$readme" 'without root privileges'
+    assert_file_contains "$readme" 'ABCI'
+    assert_file_contains "$readme" './install.sh'
+    assert_file_contains "$readme" 'mise run test'
+    assert_file_contains "$readme" \
+        'mise lock --platform macos-arm64,linux-x64,linux-arm64'
+    assert_file_contains "$readme" 'mise install --locked'
+    assert_file_contains "$readme" 'clippy'
+    assert_file_contains "$readme" 'rustfmt'
+    assert_file_contains "$readme" 'rust-analyzer'
+    assert_file_contains "$readme" 'does not uninstall'
+    assert_file_contains "$readme" 'conflict'
+    assert_file_contains "$readme" '~/.profile'
+    assert_file_contains "$readme" 'Herdr'
+    assert_file_contains "$readme" 'htop'
+    assert_file_contains "$readme" 'unmanaged'
+    assert_file_contains "$readme" 'eza'
+    assert_file_contains "$readme" 'hwloc'
+    assert_file_contains "$readme" 'tree'
+    assert_file_contains "$readme" 'xclip'
+    assert_file_contains "$readme" 'nvtop'
+    assert_file_contains "$readme" 'navi'
+    assert_file_contains "$readme" 'removed'
+    assert_file_not_contains "$readme" 'devbox run'
+    assert_file_not_contains "$readme" 'devbox install'
+    assert_file_not_contains "$readme" 'NIX_INSTALLER'
+    assert_file_not_contains "$readme" 'agents.local'
+    assert_file_not_contains "$readme" '`ha`'
+    assert_file_not_contains "$readme" 'local.lua'
+    assert_file_not_contains "$readme" 'SSH'
+    assert_file_contains "$readme" 'WezTerm visual settings'
+}
+
 test_removed_paths_are_not_active() {
     assert_path_missing "$REPO_DIR/.config/devbox"
     assert_path_missing "$REPO_DIR/.config/dotfiles/agents.local.example"
@@ -158,6 +199,7 @@ test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
 test_ci_runs_only_host_independent_checks
 test_herdr_remains_without_ha_command
+test_readme_documents_mise_setup_and_boundaries
 test_removed_paths_are_not_active
 test_daily_shell_and_git_defaults_are_safe_and_pinned
 test_wezterm_keeps_portable_visual_and_startup_behavior

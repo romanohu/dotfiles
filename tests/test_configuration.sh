@@ -77,6 +77,7 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'without root privileges'
     assert_file_contains "$readme" 'ABCI'
     assert_file_contains "$readme" './install.sh'
+    assert_file_contains "$readme" 'bash tests/run.sh'
     assert_file_contains "$readme" 'mise run test'
     assert_file_contains "$readme" \
         'mise lock --platform macos-arm64,linux-x64,linux-arm64'
@@ -88,15 +89,17 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'conflict'
     assert_file_contains "$readme" '~/.profile'
     assert_file_contains "$readme" 'Herdr'
-    assert_file_contains "$readme" 'htop'
-    assert_file_contains "$readme" 'unmanaged'
-    assert_file_contains "$readme" 'eza'
-    assert_file_contains "$readme" 'hwloc'
-    assert_file_contains "$readme" 'tree'
-    assert_file_contains "$readme" 'xclip'
-    assert_file_contains "$readme" 'nvtop'
-    assert_file_contains "$readme" 'navi'
-    assert_file_contains "$readme" 'removed'
+    assert_eq '1' "$(grep -F -x -c -- \
+        '`htop` is unmanaged by this repository.' "$readme")" \
+        'README must identify htop, and only htop, as unmanaged'
+    assert_eq '1' "$(grep -F -x -c -- \
+        '`eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed and are not installation targets.' \
+        "$readme")" \
+        'README must list the exact removed tools, including eza, on one line'
+    assert_eq '1' "$(grep -F -x -c -- \
+        '`zoxide` is the backend-specific exception: its three locked platform URLs do not include checksums.' \
+        "$readme")" \
+        'README must document the three zoxide checksum exceptions exactly'
     assert_file_not_contains "$readme" 'devbox run'
     assert_file_not_contains "$readme" 'devbox install'
     assert_file_not_contains "$readme" 'NIX_INSTALLER'

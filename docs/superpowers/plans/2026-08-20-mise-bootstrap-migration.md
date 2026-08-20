@@ -22,6 +22,8 @@
 - Do not edit `~/.profile` automatically.
 - Refuse unmanaged dotfile conflicts; never pass `--force-dotfiles` or create automatic backups.
 - Keep `bash tests/run.sh` offline and independent of mise, Nix, Devbox, the network, and host tool versions.
+- Configure `mise run test` not to auto-install tools; it invokes the canonical
+  `bash tests/run.sh` entrypoint from the repository directory.
 - Preserve current public Codex/Claude guidance; do not modify repository-external files.
 
 ## File Structure
@@ -102,6 +104,39 @@ mise_tool_entries() {
     ' "$1"
 }
 
+mise_section_entries() {
+    local file="$1"
+    local section="$2"
+
+    awk -v section="$section" '
+        $0 == section { in_section = 1; next }
+        in_section && /^\[/ { exit }
+        in_section && /^[[:space:]]*[^#[:space:]][^=]*=/ {
+            line = $0
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            print line
+        }
+    ' "$file"
+}
+
+lock_url_sections_without_checksum() {
+    awk '
+        function emit() {
+            if (section != "" && has_url && !has_checksum) print section
+        }
+        /^\[/ {
+            emit()
+            section = $0
+            has_url = 0
+            has_checksum = 0
+            next
+        }
+        /^url = "https:/ { has_url = 1 }
+        /^checksum = / { has_checksum = 1 }
+        END { emit() }
+    ' "$1"
+}
+
 mise_lock_tool_entries() {
     awk '
         /^\[\[tools\./ {
@@ -151,7 +186,7 @@ test_mise_tools_are_exact_and_complete() {
 }
 
 test_mise_lock_has_supported_platform_artifacts() {
-    local lock="$REPO_DIR/mise.lock" platform expected actual
+    local lock="$REPO_DIR/mise.lock" platform expected actual checksum_shape
 
     expected=$(printf '%s\n' \
         $'bat\t0.26.1' \
@@ -184,6 +219,25 @@ test_mise_lock_has_supported_platform_artifacts() {
     done
     assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
         '15 ordinary downloadable tools times 3 platforms must have URLs'
+    checksum_shape=$(awk '
+        /^checksum = / {
+            count++
+            value = $0
+            sub(/^checksum = "sha256:/, "", value)
+            sub(/"$/, "", value)
+            if (length(value) != 64 || value ~ /[^0-9a-f]/) invalid++
+        }
+        END { print count "\t" (invalid + 0) }
+    ' "$lock")
+    assert_eq $'42\t0' "$checksum_shape" \
+        'mise.lock must contain exactly 42 valid lowercase SHA-256 checksums'
+    expected=$(printf '%s\n' \
+        '[tools.zoxide."platforms.linux-arm64"]' \
+        '[tools.zoxide."platforms.linux-x64"]' \
+        '[tools.zoxide."platforms.macos-arm64"]')
+    actual=$(lock_url_sections_without_checksum "$lock")
+    assert_eq "$expected" "$actual" \
+        'only the three zoxide backend platform entries may omit checksums'
     assert_file_contains "$lock" '[[tools."cargo:dua-cli"]]'
     assert_file_contains "$lock" 'backend = "cargo:dua-cli"'
     assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'
@@ -194,18 +248,21 @@ test_mise_lock_has_supported_platform_artifacts() {
 }
 ```
 
-Add a separate test that asserts all three repository destinations, URLs, and
-full commit refs, plus all ten dotfile mappings shown in Step 3. It must also
-reject forced overwrite behavior:
+Add a separate test that parses and compares the complete `[bootstrap.repos]`
+and `[dotfiles]` sections against all three repositories and all ten mappings
+shown in Step 3. Extras must fail. It must also reject forced overwrite
+behavior:
 
 ```bash
-assert_file_contains "$REPO_DIR/mise.toml" \
-    '"~/.config/zsh/oh-my-zsh" = { url = "https://github.com/ohmyzsh/ohmyzsh.git", ref = "677a4592b18c08ddea737f8aca70bac0e9fc9313" }'
-assert_file_contains "$REPO_DIR/mise.toml" \
-    '"~/.config/zsh/custom/plugins/zsh-autosuggestions" = { url = "https://github.com/zsh-users/zsh-autosuggestions.git", ref = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5" }'
-assert_file_contains "$REPO_DIR/mise.toml" \
-    '"~/.config/zsh/custom/plugins/zsh-syntax-highlighting" = { url = "https://github.com/zsh-users/zsh-syntax-highlighting.git", ref = "1d85c692615a25fe2293bdd44b34c217d5d2bf04" }'
-for mapping in \
+expected=$(printf '%s\n' \
+    '"~/.config/zsh/oh-my-zsh" = { url = "https://github.com/ohmyzsh/ohmyzsh.git", ref = "677a4592b18c08ddea737f8aca70bac0e9fc9313" }' \
+    '"~/.config/zsh/custom/plugins/zsh-autosuggestions" = { url = "https://github.com/zsh-users/zsh-autosuggestions.git", ref = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5" }' \
+    '"~/.config/zsh/custom/plugins/zsh-syntax-highlighting" = { url = "https://github.com/zsh-users/zsh-syntax-highlighting.git", ref = "1d85c692615a25fe2293bdd44b34c217d5d2bf04" }')
+actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[bootstrap.repos]')
+assert_eq "$expected" "$actual" \
+    '[bootstrap.repos] must contain exactly the approved repositories'
+
+expected=$(printf '%s\n' \
     '"~/.config/mise/config.toml" = "mise.toml"' \
     '"~/.config/mise/mise.lock" = "mise.lock"' \
     '"~/.zshenv" = ".zshenv"' \
@@ -215,9 +272,10 @@ for mapping in \
     '"~/.config/zsh/aliases.zsh" = ".config/zsh/aliases.zsh"' \
     '"~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"' \
     '"~/.codex/AGENTS.md" = ".codex/AGENTS.md"' \
-    '"~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"'; do
-    assert_file_contains "$REPO_DIR/mise.toml" "$mapping"
-done
+    '"~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"')
+actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[dotfiles]')
+assert_eq "$expected" "$actual" \
+    '[dotfiles] must contain exactly the approved mappings'
 assert_file_not_contains "$REPO_DIR/mise.toml" '--force-dotfiles'
 assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
 assert_file_contains "$REPO_DIR/mise.toml" \
@@ -264,6 +322,7 @@ lockfile = true
 locked = true
 lockfile_platforms = ["macos-arm64", "linux-x64", "linux-arm64"]
 dotfiles.default_mode = "symlink"
+task.run_auto_install = false
 
 [tools]
 starship = "1.24.2"
@@ -302,6 +361,7 @@ rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,r
 "~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"
 
 [tasks.test]
+dir = "{{cwd}}"
 run = "bash tests/run.sh"
 ```
 
@@ -379,7 +439,11 @@ git commit -m "feat: add pinned mise configuration"
 
 **Interfaces:**
 - Consumes: root `mise.toml` and `mise.lock` from Task 1.
-- Produces: `preflight_required_commands`, `sha256_file`, `verify_sha256`, `run_verified_installer`, `install_mise_if_needed`, `cleanup_legacy_managed_links`, `run_mise_bootstrap`, and `main` Bash functions.
+- Produces: `preflight_required_commands`, physical target-home resolution,
+  managed-target preflight, `sha256_file`, `verify_sha256`,
+  `run_verified_installer`, `install_mise_if_needed`,
+  `cleanup_legacy_managed_links`, `run_mise_bootstrap`, and `main` Bash
+  functions.
 
 - [ ] **Step 1: Replace obsolete installer tests with the new contract**
 
@@ -399,6 +463,13 @@ test_verified_installer_cleans_temporary_directory_on_signal
 test_preflight_failure_prevents_main_mutations
 test_mise_install_passes_exact_url_hash_and_destination
 test_mise_install_requires_exact_version_after_install
+test_mise_install_rejects_symlinked_destination_paths
+test_target_home_is_absolute_physical_and_never_traverses_symlink_input
+test_managed_dotfile_conflict_blocks_every_mutation_and_bootstrap
+test_managed_dotfile_symlinked_ancestor_preserves_external_state
+test_unrelated_managed_target_symlink_and_directory_are_preserved
+test_exact_managed_dotfile_links_are_idempotent
+test_each_managed_dotfile_target_is_preflighted
 test_bootstrap_uses_exact_binary_target_home_and_root_config
 test_only_exact_legacy_links_are_removed
 test_regular_files_and_unrelated_links_are_preserved
@@ -448,7 +519,12 @@ set -euo pipefail
 
 SOURCE_DIR="${DOTFILES_SOURCE_DIR:-$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 DOT_DIR=$(CDPATH= cd -P -- "$SOURCE_DIR" && pwd -P)
-TARGET_HOME="${DOTFILES_TARGET_HOME:-$HOME}"
+if [ "${DOTFILES_TARGET_HOME+x}" = x ]; then
+    TARGET_HOME_INPUT="$DOTFILES_TARGET_HOME"
+else
+    TARGET_HOME_INPUT="$HOME"
+fi
+TARGET_HOME="$TARGET_HOME_INPUT"
 MISE_VERSION="2026.8.9"
 MISE_INSTALLER_URL="https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh"
 MISE_INSTALLER_SHA256="0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403"
@@ -470,15 +546,16 @@ preflight_required_commands() {
 
 install_mise_if_needed() {
     local installed_version=''
+    validate_mise_install_destination || return 1
     if [ -x "$MISE_BIN" ]; then
-        installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
+        installed_version=$(HOME="$TARGET_HOME" "$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     fi
     if [ "$installed_version" != "$MISE_VERSION" ]; then
         mkdir -p "$TARGET_HOME/.local/bin"
-        MISE_INSTALL_PATH="$MISE_BIN" \
+        HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" \
             run_verified_installer "$MISE_INSTALLER_URL" "$MISE_INSTALLER_SHA256"
     fi
-    installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
+    installed_version=$(HOME="$TARGET_HOME" "$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     [ "$installed_version" = "$MISE_VERSION" ] || \
         fail "mise version mismatch: expected $MISE_VERSION, got ${installed_version:-unknown}."
 }
@@ -497,7 +574,7 @@ directory, install `EXIT`, `HUP`, `INT`, and `TERM` cleanup traps, download with
 symlinked payloads, verify the digest, and only then execute:
 
 ```bash
-MISE_INSTALL_PATH="$MISE_BIN" bash "$installer_path"
+HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" bash "$installer_path"
 ```
 
 Implement `remove_exact_managed_link LINK EXPECTED...` and call it only for:
@@ -531,10 +608,15 @@ cleanup_legacy_managed_links() {
 }
 ```
 
-Never remove a regular file, real directory, or unmatched symlink. `main` runs
-preflight, validates source/target directories and supported OS, installs mise,
-cleans legacy links, and runs the bootstrap in that order. Retain the
-`BASH_SOURCE[0] == "$0"` source guard.
+Never remove a regular file, real directory, or unmatched symlink. Resolve the
+target home to an absolute physical directory without accepting a symlinked
+input. Validate the mise destination and all ancestors before either version
+probe, and set the physical target `HOME` for both probes and verified installer
+execution. `main` runs command/environment validation, preflights all ten
+managed targets and every existing ancestor beneath the target home, installs
+mise, cleans legacy links, and runs the bootstrap in that order. Only a missing
+managed target or an exact symlink to its physical repository source passes.
+Retain the `BASH_SOURCE[0] == "$0"` source guard.
 
 - [ ] **Step 4: Run focused installer tests**
 
@@ -872,7 +954,7 @@ test_readme_documents_mise_setup_and_boundaries() {
 }
 ```
 
-Also assert that the README names `htop` as unmanaged and lists `hwloc`,
+Also assert that the README names `htop` as unmanaged and lists `eza`, `hwloc`,
 `tree`, `xclip`, `nvtop`, and `navi` as removed rather than install targets.
 
 - [ ] **Step 2: Run the documentation test and verify RED**
@@ -923,7 +1005,7 @@ login shell.
 List the 17 managed tools and exact Rust components. State explicitly:
 
 - `htop` is unmanaged;
-- `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed;
+- `eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed;
 - existing system copies are not uninstalled;
 - existing Nix and Devbox installations are not uninstalled; and
 - an unmanaged dotfile conflict stops bootstrap and must be moved or backed up
@@ -1020,7 +1102,9 @@ HOME="$MISE_PARSE_HOME" MISE_GLOBAL_CONFIG_FILE="$PWD/mise.toml" \
 ```
 
 Expected: configuration loads once, all 17 tools resolve, dry runs report no
-missing platform URL, and the test task passes.
+missing platform URL, and the test task passes from a fresh home without
+installing any managed tool. The task keeps `dir = "{{cwd}}"` and disables
+automatic task tool installation in production configuration.
 
 - [ ] **Step 3: Run a real isolated-home bootstrap twice**
 
@@ -1057,10 +1141,12 @@ test ! -e "$DOTFILES_VERIFY_HOME/.local/bin/ha"
 test ! -e "$DOTFILES_VERIFY_HOME/.config/devbox"
 ```
 
-Expected: every Rust command reports toolchain `1.97.1`, both mise files are
-links to this repository, and obsolete links are absent.
+Expected: `rustc` and the selected toolchain report `1.97.1`. Cargo, Clippy,
+rustfmt, and rust-analyzer execute from that toolchain but retain their own
+independent version formats. Both mise files are links to this repository, and
+obsolete links are absent.
 
-- [ ] **Step 5: Verify conflict preservation with installer fakes**
+- [ ] **Step 5: Verify conflict preservation with installer fakes and pinned mise**
 
 The automated installer test from Task 2 is authoritative for conflict safety.
 Rerun it with tracing only if needed:
@@ -1069,8 +1155,12 @@ Rerun it with tracing only if needed:
 bash -x tests/test_installer.sh
 ```
 
-Do not run another full 17-tool install merely to reproduce a dotfile conflict.
-Expected: regular files and unrelated symlinks remain byte-for-byte unchanged.
+Also copy the already-verified pinned mise binary into a fresh isolated target
+home, create one unmanaged managed-target fixture, and run `install.sh`. It must
+fail before bootstrap state appears, with the fixture and binary checksums
+unchanged. Do not run another full 17-tool install merely to reproduce a
+dotfile conflict. Expected: regular files and unrelated symlinks remain
+byte-for-byte unchanged.
 
 - [ ] **Step 6: Inspect the final repository and commit any verified correction**
 

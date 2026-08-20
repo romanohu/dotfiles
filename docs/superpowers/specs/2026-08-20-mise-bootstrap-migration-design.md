@@ -69,12 +69,14 @@ cannot execute before mise exists. It has these responsibilities only:
 1. Resolve the physical repository path and target home.
 2. Accept macOS and Linux and verify that Bash, curl, Git, tar, Zsh, and either
    `sha256sum` or `shasum` are available.
-3. Download the immutable mise installer to a private temporary path.
-4. Verify its SHA-256 before executing it.
-5. Install mise at `$TARGET_HOME/.local/bin/mise` without modifying shell files.
-6. Remove only obsolete symlinks proven to have been created by this
+3. Preflight all ten managed dotfile targets and every existing ancestor below
+   the physical target home.
+4. Download the immutable mise installer to a private temporary path.
+5. Verify its SHA-256 before executing it.
+6. Install mise at `$TARGET_HOME/.local/bin/mise` without modifying shell files.
+7. Remove only obsolete symlinks proven to have been created by this
    repository.
-7. Trust the repository `mise.toml` and run the strict bootstrap with the
+8. Trust the repository `mise.toml` and run the strict bootstrap with the
    pinned mise binary.
 
 The bootstrap pin is:
@@ -91,9 +93,13 @@ never uses `curl | sh`. It calls the exact installed binary rather than another
 repository file as `MISE_GLOBAL_CONFIG_FILE` during the bootstrap so an
 unrelated pre-existing global configuration cannot affect the run.
 
-`DOTFILES_TARGET_HOME` remains available for isolated tests. All mise
-subprocesses used by the installer are rooted in that target home. Normal use
-leaves it unset and therefore targets `$HOME`.
+`DOTFILES_TARGET_HOME` remains available for isolated tests. It must name an
+absolute directory and is rejected when the supplied path itself is a
+symlink; the installer then resolves it to its physical path. The mise binary
+destination and its ancestors are validated before any version probe. All
+installer, version-probe, trust, and bootstrap subprocesses set `HOME` to that
+physical target home. Normal use leaves it unset and therefore targets the
+physical `$HOME` directory.
 
 ### 2. Single mise configuration
 
@@ -105,7 +111,8 @@ The repository root gains `mise.toml` with:
 - exact `[tools]` entries;
 - exact `[bootstrap.repos]` Git refs;
 - explicit `[dotfiles]` mappings; and
-- a `test` task that runs `bash tests/run.sh`.
+- a `test` task that runs `bash tests/run.sh` from `{{cwd}}` with automatic tool
+  installation disabled.
 
 The same physical file is linked to `~/.config/mise/config.toml`. The tracked
 root `mise.lock` is linked to `~/.config/mise/mise.lock`, which is mise's global
@@ -115,7 +122,10 @@ inside the repository does not load a duplicate copy.
 The tracked lockfile contains entries for the three supported platforms. A
 backend-provided checksum is retained whenever available. Strict mode requires
 pre-resolved platform URLs for ordinary downloadable tools, avoiding release
-API discovery during installation.
+API discovery during installation. The lock has 45 platform URLs and 42
+`sha256:<64 lowercase hex>` checksums. The three zoxide platform URLs are the
+explicit backend-specific checksum exceptions; no checksum is invented for
+them.
 
 ### 3. Managed tools
 
@@ -260,14 +270,16 @@ A normal first run is:
 
 1. Clone the repository.
 2. Run `./install.sh` from an interactive macOS or Linux shell.
-3. The script installs and validates pinned mise.
-4. The script cleans up exact obsolete repository-owned links.
-5. The script trusts the physical root `mise.toml`.
-6. The script invokes the equivalent of
+3. The script validates the physical target home and preflights all ten managed
+   targets and their existing ancestors.
+4. The script installs and validates pinned mise.
+5. The script cleans up exact obsolete repository-owned links.
+6. The script trusts the physical root `mise.toml`.
+7. The script invokes the equivalent of
    `mise -C "$DOT_DIR" --locked bootstrap --yes` with the root file selected as
    the global configuration for that process.
-7. mise converges pinned repositories, dotfile links, and tools.
-8. A new Zsh session loads the linked global configuration and mise shims.
+8. mise converges pinned repositories, dotfile links, and tools.
+9. A new Zsh session loads the linked global configuration and mise shims.
 
 The declarative steps are rerunnable. Successful work from a partial run is
 kept; after correcting the reported problem, rerunning converges the remaining
@@ -277,6 +289,11 @@ state instead of rolling everything back.
 
 - Unsupported operating system: fail before downloading or linking anything.
 - Missing prerequisite: identify the missing command and fail before mutation.
+- Relative, option-like, missing, or symlinked target-home input: fail before
+  mutation.
+- Existing managed target other than the exact expected physical-repository
+  symlink, or any symlinked/non-directory ancestor: preserve it and fail before
+  invoking mise.
 - Installer checksum mismatch: delete the temporary installer and fail.
 - Installed mise version mismatch: fail without falling back to another binary
   on `PATH`.
@@ -337,9 +354,9 @@ Configuration tests verify:
 - the exact 17-tool set and version values;
 - the explicit Rust profile and components;
 - the three lockfile platforms and required platform URLs/checksums, with
-  explicit backend-specific exceptions;
-- exact Git repository commits and destinations;
-- explicit dotfile mappings and absence of forced overwrite settings;
+  the three explicit zoxide checksum exceptions;
+- the complete, exact Git repository section;
+- the complete, exact dotfile section and absence of forced overwrite settings;
 - mise-only Zsh activation and PATH setup;
 - absence of Nix, Devbox, `ha`, `agents.local`, and every removed package; and
 - the retained minimal Herdr configuration.
@@ -352,6 +369,10 @@ operations with fakes. They verify:
 - checksum and installed-version failure;
 - use of the exact mise binary for trust and strict bootstrap;
 - isolation to `DOTFILES_TARGET_HOME`;
+- physical target-home validation, mise-destination validation before probes,
+  and target-home `HOME` propagation to probes and installer execution;
+- preflight rejection and preservation of unmanaged targets or unsafe
+  ancestors before bootstrap;
 - removal of exact legacy links; and
 - preservation of regular files and unrelated links.
 

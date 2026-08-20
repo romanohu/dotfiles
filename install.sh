@@ -3,17 +3,67 @@ set -euo pipefail
 
 SOURCE_DIR="${DOTFILES_SOURCE_DIR:-$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 DOT_DIR=$(CDPATH= cd -P -- "$SOURCE_DIR" && pwd -P)
-TARGET_HOME="${DOTFILES_TARGET_HOME:-$HOME}"
+if [ "${DOTFILES_TARGET_HOME+x}" = x ]; then
+    TARGET_HOME_INPUT="$DOTFILES_TARGET_HOME"
+else
+    TARGET_HOME_INPUT="$HOME"
+fi
+TARGET_HOME="$TARGET_HOME_INPUT"
 MISE_VERSION="2026.8.9"
 MISE_INSTALLER_URL="https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh"
 MISE_INSTALLER_SHA256="0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403"
 MISE_BIN="$TARGET_HOME/.local/bin/mise"
+TARGET_HOME_RESOLVED=0
 VERIFIED_INSTALLER_SOURCE_SUBSHELL="${BASH_SUBSHELL:-0}"
 
 log() { printf '[dotfiles] %s\n' "$1"; }
 warn() { printf '[dotfiles][warn] %s\n' "$1" >&2; }
 fail() { printf '[dotfiles][error] %s\n' "$1" >&2; exit 1; }
 has_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+resolve_target_home() {
+    local normalized="$TARGET_HOME_INPUT"
+    local physical_home
+
+    [ "${TARGET_HOME_RESOLVED:-0}" -eq 0 ] || return 0
+    [ -n "$normalized" ] || {
+        warn 'Target home must not be empty.'
+        return 1
+    }
+    case "$normalized" in
+        /*) ;;
+        *)
+            warn "Target home must be an absolute path: $normalized"
+            return 1
+            ;;
+    esac
+    while [ "$normalized" != / ] && [ "${normalized%/}" != "$normalized" ]; do
+        normalized="${normalized%/}"
+    done
+    if [ -L "$normalized" ]; then
+        warn "Target home must not be a symbolic link: $normalized"
+        return 1
+    fi
+    if [ ! -d "$normalized" ]; then
+        warn "Target home directory is unavailable: $normalized"
+        return 1
+    fi
+    physical_home=$(CDPATH= cd -P -- "$normalized" 2>/dev/null && pwd -P) || {
+        warn "Cannot resolve physical target home: $normalized"
+        return 1
+    }
+    case "$physical_home" in
+        /*) ;;
+        *)
+            warn "Resolved target home is not absolute: $physical_home"
+            return 1
+            ;;
+    esac
+
+    TARGET_HOME="$physical_home"
+    MISE_BIN="$TARGET_HOME/.local/bin/mise"
+    TARGET_HOME_RESOLVED=1
+}
 
 preflight_required_commands() {
     local required
@@ -141,7 +191,7 @@ run_verified_installer() {
         fi
     fi
     if [ "$status" -eq 0 ]; then
-        MISE_INSTALL_PATH="$MISE_BIN" bash "$installer_path" &
+        HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" bash "$installer_path" &
         active_child_pid=$!
         if wait "$active_child_pid"; then
             status=0
@@ -166,6 +216,9 @@ run_verified_installer() {
 validate_mise_install_destination() {
     local parent="${MISE_BIN%/*}"
 
+    resolve_target_home || return 1
+    parent="${MISE_BIN%/*}"
+
     case "$MISE_BIN" in
         "$TARGET_HOME"/*) ;;
         *)
@@ -186,28 +239,107 @@ validate_mise_install_destination() {
             warn "Refusing mise destination below symlinked parent: $parent"
             return 1
         fi
+        if [ -e "$parent" ] && [ ! -d "$parent" ]; then
+            warn "Refusing mise destination below non-directory parent: $parent"
+            return 1
+        fi
         parent="${parent%/*}"
     done
     if [ -L "$MISE_BIN" ]; then
         warn "Refusing symlinked mise destination: $MISE_BIN"
         return 1
     fi
+    if [ -e "$MISE_BIN" ] && [ ! -f "$MISE_BIN" ]; then
+        warn "Refusing non-file mise destination: $MISE_BIN"
+        return 1
+    fi
 }
 
 install_mise_if_needed() {
     local installed_version=''
+    validate_mise_install_destination || return 1
     if [ -x "$MISE_BIN" ]; then
-        installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
+        installed_version=$(HOME="$TARGET_HOME" "$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     fi
     if [ "$installed_version" != "$MISE_VERSION" ]; then
-        validate_mise_install_destination || return 1
         mkdir -p "$TARGET_HOME/.local/bin" || return 1
-        MISE_INSTALL_PATH="$MISE_BIN" \
+        HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" \
             run_verified_installer "$MISE_INSTALLER_URL" "$MISE_INSTALLER_SHA256" || return 1
     fi
-    installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
+    installed_version=$(HOME="$TARGET_HOME" "$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     [ "$installed_version" = "$MISE_VERSION" ] || \
         fail "mise version mismatch: expected $MISE_VERSION, got ${installed_version:-unknown}."
+}
+
+validate_managed_dotfile_target() {
+    local target="$1"
+    local expected_source="$2"
+    local parent="${target%/*}"
+    local actual_source
+
+    case "$target" in
+        "$TARGET_HOME"/*) ;;
+        *)
+            warn "Refusing managed target outside target home: $target"
+            return 1
+            ;;
+    esac
+    while [ "$parent" != "$TARGET_HOME" ]; do
+        case "$parent" in
+            "$TARGET_HOME"/*) ;;
+            *)
+                warn "Refusing ambiguous managed target: $target"
+                return 1
+                ;;
+        esac
+        if [ -L "$parent" ]; then
+            warn "Refusing managed target below symlinked ancestor: $parent"
+            return 1
+        fi
+        if [ -e "$parent" ] && [ ! -d "$parent" ]; then
+            warn "Refusing managed target below non-directory ancestor: $parent"
+            return 1
+        fi
+        parent="${parent%/*}"
+    done
+
+    if [ -L "$target" ]; then
+        actual_source=$(readlink "$target") || return 1
+        if [ "$actual_source" != "$expected_source" ]; then
+            warn "Refusing unrelated managed-target symlink: $target"
+            return 1
+        fi
+        return 0
+    fi
+    if [ -e "$target" ]; then
+        warn "Refusing unmanaged managed target: $target"
+        return 1
+    fi
+}
+
+preflight_managed_dotfiles() {
+    resolve_target_home || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/mise/config.toml" "$DOT_DIR/mise.toml" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/mise/mise.lock" "$DOT_DIR/mise.lock" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.zshenv" "$DOT_DIR/.zshenv" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/git" "$DOT_DIR/.config/git" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/herdr" "$DOT_DIR/.config/herdr" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/zsh/.zshrc" "$DOT_DIR/.config/zsh/.zshrc" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/zsh/aliases.zsh" "$DOT_DIR/.config/zsh/aliases.zsh" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/wezterm/wezterm.lua" \
+        "$DOT_DIR/.config/wezterm/wezterm.lua" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.codex/AGENTS.md" "$DOT_DIR/.codex/AGENTS.md" || return 1
+    validate_managed_dotfile_target \
+        "$TARGET_HOME/.claude/CLAUDE.md" "$DOT_DIR/.claude/CLAUDE.md" || return 1
 }
 
 remove_exact_managed_link() {
@@ -269,6 +401,7 @@ cleanup_legacy_managed_links() {
 }
 
 run_mise_bootstrap() {
+    resolve_target_home || return 1
     HOME="$TARGET_HOME" MISE_GLOBAL_CONFIG_FILE="$DOT_DIR/mise.toml" \
         "$MISE_BIN" trust --yes "$DOT_DIR/mise.toml"
     HOME="$TARGET_HOME" MISE_GLOBAL_CONFIG_FILE="$DOT_DIR/mise.toml" \
@@ -279,8 +412,7 @@ validate_environment() {
     [ -d "$SOURCE_DIR" ] || fail "Dotfiles source directory is unavailable: $SOURCE_DIR"
     [ -d "$DOT_DIR" ] || fail "Physical dotfiles directory is unavailable: $DOT_DIR"
     [ -f "$DOT_DIR/mise.toml" ] || fail "Root mise configuration is unavailable: $DOT_DIR/mise.toml"
-    [ -d "$TARGET_HOME" ] || fail "Target home directory is unavailable: $TARGET_HOME"
-    [ ! -L "$TARGET_HOME" ] || fail "Target home must not be a symbolic link: $TARGET_HOME"
+    resolve_target_home || fail "Invalid target home: $TARGET_HOME_INPUT"
 
     case "$(uname -s)" in
         Darwin|Linux) ;;
@@ -291,9 +423,10 @@ validate_environment() {
 main() {
     preflight_required_commands
     validate_environment
-    install_mise_if_needed
-    cleanup_legacy_managed_links
-    run_mise_bootstrap
+    preflight_managed_dotfiles || return 1
+    install_mise_if_needed || return 1
+    cleanup_legacy_managed_links || return 1
+    run_mise_bootstrap || return 1
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

@@ -38,14 +38,16 @@ mise manages these 17 tools:
 - Rust 1.97.1 with the minimal profile and the exact `clippy`, `rustfmt`, and
   `rust-analyzer` components.
 
-`htop` is unmanaged by this repository. `eza`, `hwloc`, `tree`, `xclip`,
-`nvtop`, and `navi` were removed and are not installation targets.
+`htop` is unmanaged by this repository.
+`eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed and are not installation targets.
 
 Most managed tools have per-platform artifact URLs and checksums in
 `mise.lock`. Rust uses mise's core rustup backend, and dua is source-built by
 Cargo after that pinned Rust installation; therefore those two do not have
 per-platform distribution URL/checksum entries in `mise.lock`. The lockfile
 does not promise that every managed tool is a prebuilt artifact.
+
+`zoxide` is the backend-specific exception: its three locked platform URLs do not include checksums.
 
 ## ABCI and other managed Linux hosts
 
@@ -64,7 +66,10 @@ Devbox installations. It also does not uninstall other existing tool copies.
 
 An unmanaged dotfile conflict stops bootstrap. Move or back up that file
 manually, then rerun `./install.sh`; the installer will not overwrite it on
-your behalf. It does not edit `~/.profile`.
+your behalf. Before invoking mise, the installer checks all ten managed targets
+and their existing ancestors. It accepts only a missing target or the exact
+repository symlink, and rejects symlinked ancestors without traversing them.
+It does not edit `~/.profile`.
 
 ## Shell and Herdr usage
 
@@ -97,14 +102,22 @@ contain machine-specific host configuration.
 
 ## Tests
 
-Run the complete offline repository suite with the pinned environment:
+The canonical offline entrypoint is independent of mise and managed tools:
+
+```sh
+bash tests/run.sh
+```
+
+When the pinned mise binary is available, this convenience task invokes the
+same offline suite without automatically installing managed tools:
 
 ```sh
 mise run test
 ```
 
-The test entrypoint resolves the physical repository path and performs only
-host-independent checks; it does not install tools or require secrets.
+Both entrypoints resolve the physical repository path and perform only
+host-independent checks; they do not install tools, access the network, or
+require secrets.
 
 ## Updating pins
 

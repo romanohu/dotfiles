@@ -19,6 +19,39 @@ mise_tool_entries() {
     ' "$1"
 }
 
+mise_section_entries() {
+    local file="$1"
+    local section="$2"
+
+    awk -v section="$section" '
+        $0 == section { in_section = 1; next }
+        in_section && /^\[/ { exit }
+        in_section && /^[[:space:]]*[^#[:space:]][^=]*=/ {
+            line = $0
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            print line
+        }
+    ' "$file"
+}
+
+lock_url_sections_without_checksum() {
+    awk '
+        function emit() {
+            if (section != "" && has_url && !has_checksum) print section
+        }
+        /^\[/ {
+            emit()
+            section = $0
+            has_url = 0
+            has_checksum = 0
+            next
+        }
+        /^url = "https:/ { has_url = 1 }
+        /^checksum = / { has_checksum = 1 }
+        END { emit() }
+    ' "$1"
+}
+
 mise_lock_tool_entries() {
     awk '
         /^\[\[tools\./ {
@@ -64,7 +97,7 @@ test_mise_tools_are_exact_and_complete() {
 }
 
 test_mise_lock_has_supported_platform_artifacts() {
-    local lock="$REPO_DIR/mise.lock" platform expected actual
+    local lock="$REPO_DIR/mise.lock" platform expected actual checksum_shape
 
     expected=$(printf '%s\n' \
         $'bat\t0.26.1' \
@@ -97,6 +130,25 @@ test_mise_lock_has_supported_platform_artifacts() {
     done
     assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
         '15 ordinary downloadable tools times 3 platforms must have URLs'
+    checksum_shape=$(awk '
+        /^checksum = / {
+            count++
+            value = $0
+            sub(/^checksum = "sha256:/, "", value)
+            sub(/"$/, "", value)
+            if (length(value) != 64 || value ~ /[^0-9a-f]/) invalid++
+        }
+        END { print count "\t" (invalid + 0) }
+    ' "$lock")
+    assert_eq $'42\t0' "$checksum_shape" \
+        'mise.lock must contain exactly 42 valid lowercase SHA-256 checksums'
+    expected=$(printf '%s\n' \
+        '[tools.zoxide."platforms.linux-arm64"]' \
+        '[tools.zoxide."platforms.linux-x64"]' \
+        '[tools.zoxide."platforms.macos-arm64"]')
+    actual=$(lock_url_sections_without_checksum "$lock")
+    assert_eq "$expected" "$actual" \
+        'only the three zoxide backend platform entries may omit checksums'
     assert_file_contains "$lock" '[[tools."cargo:dua-cli"]]'
     assert_file_contains "$lock" 'backend = "cargo:dua-cli"'
     assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'
@@ -107,15 +159,17 @@ test_mise_lock_has_supported_platform_artifacts() {
 }
 
 test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
-    local mapping
+    local expected actual
 
-    assert_file_contains "$REPO_DIR/mise.toml" \
-        '"~/.config/zsh/oh-my-zsh" = { url = "https://github.com/ohmyzsh/ohmyzsh.git", ref = "677a4592b18c08ddea737f8aca70bac0e9fc9313" }'
-    assert_file_contains "$REPO_DIR/mise.toml" \
-        '"~/.config/zsh/custom/plugins/zsh-autosuggestions" = { url = "https://github.com/zsh-users/zsh-autosuggestions.git", ref = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5" }'
-    assert_file_contains "$REPO_DIR/mise.toml" \
-        '"~/.config/zsh/custom/plugins/zsh-syntax-highlighting" = { url = "https://github.com/zsh-users/zsh-syntax-highlighting.git", ref = "1d85c692615a25fe2293bdd44b34c217d5d2bf04" }'
-    for mapping in \
+    expected=$(printf '%s\n' \
+        '"~/.config/zsh/oh-my-zsh" = { url = "https://github.com/ohmyzsh/ohmyzsh.git", ref = "677a4592b18c08ddea737f8aca70bac0e9fc9313" }' \
+        '"~/.config/zsh/custom/plugins/zsh-autosuggestions" = { url = "https://github.com/zsh-users/zsh-autosuggestions.git", ref = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5" }' \
+        '"~/.config/zsh/custom/plugins/zsh-syntax-highlighting" = { url = "https://github.com/zsh-users/zsh-syntax-highlighting.git", ref = "1d85c692615a25fe2293bdd44b34c217d5d2bf04" }')
+    actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[bootstrap.repos]')
+    assert_eq "$expected" "$actual" \
+        '[bootstrap.repos] must contain exactly the approved repositories'
+
+    expected=$(printf '%s\n' \
         '"~/.config/mise/config.toml" = "mise.toml"' \
         '"~/.config/mise/mise.lock" = "mise.lock"' \
         '"~/.zshenv" = ".zshenv"' \
@@ -125,9 +179,10 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
         '"~/.config/zsh/aliases.zsh" = ".config/zsh/aliases.zsh"' \
         '"~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"' \
         '"~/.codex/AGENTS.md" = ".codex/AGENTS.md"' \
-        '"~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"'; do
-        assert_file_contains "$REPO_DIR/mise.toml" "$mapping"
-    done
+        '"~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"')
+    actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[dotfiles]')
+    assert_eq "$expected" "$actual" \
+        '[dotfiles] must contain exactly the approved mappings'
     assert_file_not_contains "$REPO_DIR/mise.toml" '--force-dotfiles'
     assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
     assert_file_contains "$REPO_DIR/mise.toml" \
@@ -136,6 +191,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
     assert_file_contains "$REPO_DIR/mise.toml" 'locked = true'
     assert_file_contains "$REPO_DIR/mise.toml" \
         'lockfile_platforms = ["macos-arm64", "linux-x64", "linux-arm64"]'
+    assert_file_contains "$REPO_DIR/mise.toml" 'task.run_auto_install = false'
     assert_file_contains "$REPO_DIR/mise.toml" 'dir = "{{cwd}}"'
     assert_file_not_contains "$REPO_DIR/mise.toml" 'latest'
 }
@@ -146,11 +202,15 @@ test_global_mise_test_task_runs_from_repository() {
     [ -n "${DOTFILES_TEST_MISE_HOME:-}" ] ||
         fail 'DOTFILES_TEST_MISE_HOME is required with DOTFILES_TEST_MISE_BIN'
 
-    HOME="$DOTFILES_TEST_MISE_HOME" \
-        MISE_GLOBAL_CONFIG_FILE="$REPO_DIR/mise.toml" \
-        MISE_TASK_RUN_AUTO_INSTALL=false \
-        DOTFILES_MISE_TASK_TEST_CHILD=1 \
-        "$DOTFILES_TEST_MISE_BIN" -C "$REPO_DIR" run test
+    assert_path_missing "$DOTFILES_TEST_MISE_HOME/.local/share/mise/installs"
+    (
+        unset MISE_TASK_RUN_AUTO_INSTALL
+        HOME="$DOTFILES_TEST_MISE_HOME" \
+            MISE_GLOBAL_CONFIG_FILE="$REPO_DIR/mise.toml" \
+            DOTFILES_MISE_TASK_TEST_CHILD=1 \
+            "$DOTFILES_TEST_MISE_BIN" -C "$REPO_DIR" run test
+    )
+    assert_path_missing "$DOTFILES_TEST_MISE_HOME/.local/share/mise/installs"
 }
 
 test_mise_tools_are_exact_and_complete

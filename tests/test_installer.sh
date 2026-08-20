@@ -113,17 +113,27 @@ test_sha256_file_rejects_symlinks_and_option_like_paths() {
 test_verified_installer_executes_only_after_hash_match() {
     local fixture="$TEST_ROOT/harmless-installer.sh"
     local marker="$TEST_ROOT/verified-installer-executed"
+    local installer_home_marker="$TEST_ROOT/verified-installer-home"
     local temp_root="$TEST_ROOT/verified-installer-tmp"
+    local target_home="$TEST_ROOT/verified-installer-target-home"
+    local ambient_home="$TEST_ROOT/verified-installer-ambient-home"
+    local physical_target_home
     local actual_sha
 
-    mkdir -p "$temp_root"
-    printf '%s\n' '#!/usr/bin/env bash' ': > "$EXECUTED_MARKER"' > "$fixture"
+    mkdir -p "$temp_root" "$target_home" "$ambient_home"
+    physical_target_home=$(CDPATH= cd -P -- "$target_home" && pwd -P)
+    printf '%s\n' '#!/usr/bin/env bash' \
+        ': > "$EXECUTED_MARKER"' \
+        'printf "%s\n" "$HOME" > "$EXECUTED_HOME_MARKER"' > "$fixture"
     actual_sha="$(fixture_sha256 "$fixture")"
 
     (
         export EXECUTED_MARKER="$marker"
+        export EXECUTED_HOME_MARKER="$installer_home_marker"
         export TEST_CURL_SOURCE="$fixture"
         export TMPDIR="$temp_root"
+        export HOME="$ambient_home"
+        export DOTFILES_TARGET_HOME="$target_home"
         # shellcheck source=/dev/null
         . "$INSTALLER_RUNTIME_PATH"
         . "$TEST_DIR/test_helpers.sh"
@@ -143,6 +153,8 @@ test_verified_installer_executes_only_after_hash_match() {
             cp "$TEST_CURL_SOURCE" "$output_path"
         }
 
+        resolve_target_home
+
         if run_verified_installer 'https://example.invalid/installer.sh' \
             '0000000000000000000000000000000000000000000000000000000000000000'; then
             fail 'verified installer must reject a mismatched digest'
@@ -151,6 +163,8 @@ test_verified_installer_executes_only_after_hash_match() {
 
         run_verified_installer 'https://example.invalid/installer.sh' "$actual_sha"
         assert_path_exists "$EXECUTED_MARKER"
+        assert_eq "$physical_target_home" "$(cat "$EXECUTED_HOME_MARKER")" \
+            'verified installer did not receive the physical target HOME'
     )
 }
 
@@ -270,17 +284,31 @@ test_preflight_failure_prevents_main_mutations() {
 
 test_mise_install_passes_exact_url_hash_and_destination() {
     local target_home="$TEST_ROOT/mise-install-target"
+    local ambient_home="$TEST_ROOT/mise-install-ambient-home"
     local calls="$TEST_ROOT/mise-install-calls"
+    local home_calls="$TEST_ROOT/mise-install-home-calls"
+    local physical_target_home
 
-    mkdir -p "$target_home"
+    mkdir -p "$target_home" "$ambient_home"
+    physical_target_home=$(CDPATH= cd -P -- "$target_home" && pwd -P)
+    mkdir -p "$physical_target_home/.local/bin"
+    printf '%s\n' '#!/usr/bin/env bash' \
+        'printf "probe|%s\n" "$HOME" >> "$MISE_TEST_HOME_CALLS"' \
+        'printf "%s\n" "2026.8.8 macos-arm64 (2026-08-18)"' \
+        > "$physical_target_home/.local/bin/mise"
+    chmod +x "$physical_target_home/.local/bin/mise"
     (
+        export HOME="$ambient_home"
         export DOTFILES_TARGET_HOME="$target_home"
+        export MISE_TEST_HOME_CALLS="$home_calls"
         # shellcheck source=/dev/null
         . "$INSTALLER_RUNTIME_PATH"
         run_verified_installer() {
             printf '%s|%s|%s\n' "$1" "$2" "$MISE_INSTALL_PATH" >> "$calls"
+            printf 'installer|%s\n' "$HOME" >> "$MISE_TEST_HOME_CALLS"
             printf '%s\n' '#!/usr/bin/env bash' \
                 'if [ "${1:-}" = "--version" ]; then' \
+                '    printf "probe|%s\n" "$HOME" >> "$MISE_TEST_HOME_CALLS"' \
                 '    printf "%s\n" "2026.8.9 macos-arm64 (2026-08-19)"' \
                 'fi' > "$MISE_INSTALL_PATH"
             chmod +x "$MISE_INSTALL_PATH"
@@ -292,7 +320,12 @@ test_mise_install_passes_exact_url_hash_and_destination() {
     )
 
     assert_file_contains "$calls" \
-        "https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh|0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403|$target_home/.local/bin/mise"
+        "https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh|0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403|$physical_target_home/.local/bin/mise"
+    assert_file_contains "$home_calls" "installer|$physical_target_home"
+    assert_file_contains "$home_calls" "probe|$physical_target_home"
+    assert_eq '2' "$(grep -F -x -c -- "probe|$physical_target_home" "$home_calls")" \
+        'both mise version probes must use the physical target home'
+    assert_file_not_contains "$home_calls" "$ambient_home"
 }
 
 test_mise_install_requires_exact_version_after_install() {
@@ -355,13 +388,15 @@ test_mise_install_rejects_symlinked_destination_paths() {
     external="$TEST_ROOT/mise-symlinked-binary-external"
     mkdir -p "$target_home/.local/bin" "$external"
     printf '%s\n' '#!/usr/bin/env bash' \
-        'printf "%s\n" "2026.8.8 macos-arm64 (2026-08-18)"' \
+        ': > "$MISE_SYMLINK_PROBE_MARKER"' \
+        'printf "%s\n" "2026.8.9 macos-arm64 (2026-08-19)"' \
         > "$external/mise"
     chmod +x "$external/mise"
     ln -s "$external/mise" "$target_home/.local/bin/mise"
 
     if (
         export DOTFILES_TARGET_HOME="$target_home"
+        export MISE_SYMLINK_PROBE_MARKER="$TEST_ROOT/mise-symlink-probe-marker"
         # shellcheck source=/dev/null
         . "$INSTALLER_RUNTIME_PATH"
         run_verified_installer() {
@@ -374,8 +409,219 @@ test_mise_install_rejects_symlinked_destination_paths() {
         fail 'mise installation accepted a symlinked binary destination'
     fi
     assert_link_points_to "$target_home/.local/bin/mise" "$external/mise"
-    assert_file_contains "$external/mise" '2026.8.8 macos-arm64'
+    assert_file_contains "$external/mise" '2026.8.9 macos-arm64'
     assert_file_not_contains "$external/mise" 'mutated'
+    assert_path_missing "$TEST_ROOT/mise-symlink-probe-marker"
+}
+
+test_target_home_is_absolute_physical_and_never_traverses_symlink_input() {
+    local physical_home="$TEST_ROOT/physical-target-home"
+    local linked_home="$TEST_ROOT/linked-target-home"
+    local expected_physical_home
+    local invalid
+
+    mkdir -p "$physical_home/child" "$TEST_ROOT/relative-target-home" \
+        "$TEST_ROOT/--option-target-home"
+    expected_physical_home=$(CDPATH= cd -P -- "$physical_home" && pwd -P)
+    ln -s "$physical_home" "$linked_home"
+
+    for invalid in relative-target-home --option-target-home; do
+        if (
+            cd "$TEST_ROOT"
+            export DOTFILES_TARGET_HOME="$invalid"
+            # shellcheck source=/dev/null
+            . "$INSTALLER_RUNTIME_PATH"
+            validate_environment
+        ); then
+            fail "installer accepted non-absolute target home: $invalid"
+        fi
+    done
+
+    if (
+        export DOTFILES_TARGET_HOME="$linked_home/"
+        export TARGET_HOME_RESOLVED=1
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        validate_environment
+    ); then
+        fail 'installer traversed a symlinked target-home input'
+    fi
+    assert_link_points_to "$linked_home" "$physical_home"
+
+    (
+        export DOTFILES_TARGET_HOME="$physical_home/child/.."
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        validate_environment
+        assert_eq "$expected_physical_home" "$TARGET_HOME" \
+            'target home was not resolved to its physical absolute directory'
+        assert_eq "$expected_physical_home/.local/bin/mise" "$MISE_BIN" \
+            'mise destination did not use the physical target home'
+    )
+}
+
+test_managed_dotfile_conflict_blocks_every_mutation_and_bootstrap() {
+    local target_home="$TEST_ROOT/managed-conflict-target"
+    local calls="$TEST_ROOT/managed-conflict-calls"
+    local target="$target_home/.zshenv"
+
+    mkdir -p "$target_home"
+    printf 'preserve unmanaged bytes\n' > "$target"
+
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_required_commands() { return 0; }
+        install_mise_if_needed() { printf 'install\n' >> "$calls"; }
+        cleanup_legacy_managed_links() { printf 'cleanup\n' >> "$calls"; }
+        run_mise_bootstrap() { printf 'bootstrap\n' >> "$calls"; }
+
+        main
+    ); then
+        fail 'installer accepted an unmanaged managed-target file'
+    fi
+
+    assert_eq 'preserve unmanaged bytes' "$(cat "$target")" \
+        'managed-target preflight changed rejected file bytes'
+    assert_path_missing "$calls"
+}
+
+test_managed_dotfile_symlinked_ancestor_preserves_external_state() {
+    local target_home="$TEST_ROOT/managed-ancestor-target"
+    local external="$TEST_ROOT/managed-ancestor-external"
+    local calls="$TEST_ROOT/managed-ancestor-calls"
+
+    mkdir -p "$target_home" "$external/mise"
+    printf 'preserve external bytes\n' > "$external/mise/config.toml"
+    ln -s "$external" "$target_home/.config"
+
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_required_commands() { return 0; }
+        install_mise_if_needed() { printf 'install\n' >> "$calls"; }
+        cleanup_legacy_managed_links() { printf 'cleanup\n' >> "$calls"; }
+        run_mise_bootstrap() { printf 'bootstrap\n' >> "$calls"; }
+
+        main
+    ); then
+        fail 'installer accepted a managed target below a symlinked ancestor'
+    fi
+
+    assert_link_points_to "$target_home/.config" "$external"
+    assert_eq 'preserve external bytes' "$(cat "$external/mise/config.toml")" \
+        'managed-target preflight changed external bytes'
+    assert_path_missing "$calls"
+}
+
+test_unrelated_managed_target_symlink_and_directory_are_preserved() {
+    local directory_home="$TEST_ROOT/managed-directory-target"
+    local symlink_home="$TEST_ROOT/managed-symlink-target"
+    local external="$TEST_ROOT/managed-symlink-external"
+
+    mkdir -p "$directory_home/.config/git" "$symlink_home" "$external"
+    printf 'preserve directory bytes\n' > "$directory_home/.config/git/sentinel"
+    printf 'preserve symlink bytes\n' > "$external/sentinel"
+    ln -s "$external" "$symlink_home/.zshenv"
+
+    if (
+        export DOTFILES_TARGET_HOME="$directory_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_managed_dotfiles
+    ); then
+        fail 'managed-target preflight accepted a real target directory'
+    fi
+    assert_eq 'preserve directory bytes' \
+        "$(cat "$directory_home/.config/git/sentinel")" \
+        'managed-target preflight changed a rejected directory'
+
+    if (
+        export DOTFILES_TARGET_HOME="$symlink_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_managed_dotfiles
+    ); then
+        fail 'managed-target preflight accepted an unrelated target symlink'
+    fi
+    assert_link_points_to "$symlink_home/.zshenv" "$external"
+    assert_eq 'preserve symlink bytes' "$(cat "$external/sentinel")" \
+        'managed-target preflight changed unrelated symlink state'
+}
+
+test_exact_managed_dotfile_links_are_idempotent() {
+    local target_home="$TEST_ROOT/exact-managed-links-target"
+    local target source
+
+    mkdir -p "$target_home"
+    set -- \
+        '.config/mise/config.toml' 'mise.toml' \
+        '.config/mise/mise.lock' 'mise.lock' \
+        '.zshenv' '.zshenv' \
+        '.config/git' '.config/git' \
+        '.config/herdr' '.config/herdr' \
+        '.config/zsh/.zshrc' '.config/zsh/.zshrc' \
+        '.config/zsh/aliases.zsh' '.config/zsh/aliases.zsh' \
+        '.config/wezterm/wezterm.lua' '.config/wezterm/wezterm.lua' \
+        '.codex/AGENTS.md' '.codex/AGENTS.md' \
+        '.claude/CLAUDE.md' '.claude/CLAUDE.md'
+    while [ "$#" -gt 0 ]; do
+        target="$target_home/$1"
+        source="$REPO_DIR/$2"
+        mkdir -p "${target%/*}"
+        ln -s "$source" "$target"
+        shift 2
+    done
+
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_managed_dotfiles
+        preflight_managed_dotfiles
+    )
+
+    assert_eq '10' "$(find "$target_home" -type l | wc -l | tr -d ' ')" \
+        'correct managed links changed during repeated preflight'
+    assert_link_points_to "$target_home/.config/mise/config.toml" "$REPO_DIR/mise.toml"
+    assert_link_points_to "$target_home/.claude/CLAUDE.md" "$REPO_DIR/.claude/CLAUDE.md"
+}
+
+test_each_managed_dotfile_target_is_preflighted() {
+    local relative target_home target
+    local index=0
+
+    for relative in \
+        '.config/mise/config.toml' \
+        '.config/mise/mise.lock' \
+        '.zshenv' \
+        '.config/git' \
+        '.config/herdr' \
+        '.config/zsh/.zshrc' \
+        '.config/zsh/aliases.zsh' \
+        '.config/wezterm/wezterm.lua' \
+        '.codex/AGENTS.md' \
+        '.claude/CLAUDE.md'; do
+        index=$((index + 1))
+        target_home="$TEST_ROOT/managed-target-$index"
+        target="$target_home/$relative"
+        mkdir -p "${target%/*}"
+        printf 'preserve target %s\n' "$index" > "$target"
+
+        if (
+            export DOTFILES_TARGET_HOME="$target_home"
+            # shellcheck source=/dev/null
+            . "$INSTALLER_RUNTIME_PATH"
+            preflight_managed_dotfiles
+        ); then
+            fail "managed target was omitted from preflight: $relative"
+        fi
+        assert_eq "preserve target $index" "$(cat "$target")" \
+            "preflight changed rejected managed target: $relative"
+    done
+    assert_eq '10' "$index" 'managed-target preflight fixture count changed'
 }
 
 test_bootstrap_uses_exact_binary_target_home_and_root_config() {
@@ -383,10 +629,12 @@ test_bootstrap_uses_exact_binary_target_home_and_root_config() {
     local target_home="$TEST_ROOT/bootstrap-target"
     local calls="$TEST_ROOT/bootstrap-calls"
     local physical_repo
+    local physical_target_home
 
     ln -s "$REPO_DIR" "$source_link"
     mkdir -p "$target_home"
     physical_repo=$(CDPATH= cd -P -- "$source_link" && pwd -P)
+    physical_target_home=$(CDPATH= cd -P -- "$target_home" && pwd -P)
 
     (
         export DOTFILES_SOURCE_DIR="$source_link"
@@ -403,9 +651,9 @@ test_bootstrap_uses_exact_binary_target_home_and_root_config() {
     )
 
     assert_file_contains "$calls" \
-        "$target_home|$physical_repo/mise.toml|trust --yes $physical_repo/mise.toml"
+        "$physical_target_home|$physical_repo/mise.toml|trust --yes $physical_repo/mise.toml"
     assert_file_contains "$calls" \
-        "$target_home|$physical_repo/mise.toml|-C $physical_repo --locked bootstrap --yes"
+        "$physical_target_home|$physical_repo/mise.toml|-C $physical_repo --locked bootstrap --yes"
 }
 
 test_only_exact_legacy_links_are_removed() {
@@ -569,6 +817,12 @@ test_preflight_failure_prevents_main_mutations
 test_mise_install_passes_exact_url_hash_and_destination
 test_mise_install_requires_exact_version_after_install
 test_mise_install_rejects_symlinked_destination_paths
+test_target_home_is_absolute_physical_and_never_traverses_symlink_input
+test_managed_dotfile_conflict_blocks_every_mutation_and_bootstrap
+test_managed_dotfile_symlinked_ancestor_preserves_external_state
+test_unrelated_managed_target_symlink_and_directory_are_preserved
+test_exact_managed_dotfile_links_are_idempotent
+test_each_managed_dotfile_target_is_preflighted
 test_bootstrap_uses_exact_binary_target_home_and_root_config
 test_only_exact_legacy_links_are_removed
 test_legacy_cleanup_propagates_unlink_failure

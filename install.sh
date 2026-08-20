@@ -163,15 +163,47 @@ run_verified_installer() {
     return "$status"
 }
 
+validate_mise_install_destination() {
+    local parent="${MISE_BIN%/*}"
+
+    case "$MISE_BIN" in
+        "$TARGET_HOME"/*) ;;
+        *)
+            warn "Refusing mise destination outside target home: $MISE_BIN"
+            return 1
+            ;;
+    esac
+
+    while [ "$parent" != "$TARGET_HOME" ]; do
+        case "$parent" in
+            "$TARGET_HOME"/*) ;;
+            *)
+                warn "Refusing ambiguous mise destination: $MISE_BIN"
+                return 1
+                ;;
+        esac
+        if [ -L "$parent" ]; then
+            warn "Refusing mise destination below symlinked parent: $parent"
+            return 1
+        fi
+        parent="${parent%/*}"
+    done
+    if [ -L "$MISE_BIN" ]; then
+        warn "Refusing symlinked mise destination: $MISE_BIN"
+        return 1
+    fi
+}
+
 install_mise_if_needed() {
     local installed_version=''
     if [ -x "$MISE_BIN" ]; then
         installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     fi
     if [ "$installed_version" != "$MISE_VERSION" ]; then
-        mkdir -p "$TARGET_HOME/.local/bin"
+        validate_mise_install_destination || return 1
+        mkdir -p "$TARGET_HOME/.local/bin" || return 1
         MISE_INSTALL_PATH="$MISE_BIN" \
-            run_verified_installer "$MISE_INSTALLER_URL" "$MISE_INSTALLER_SHA256"
+            run_verified_installer "$MISE_INSTALLER_URL" "$MISE_INSTALLER_SHA256" || return 1
     fi
     installed_version=$("$MISE_BIN" --version 2>/dev/null | awk 'NR == 1 { print $1 }')
     [ "$installed_version" = "$MISE_VERSION" ] || \
@@ -213,7 +245,7 @@ remove_exact_managed_link() {
     actual_target="$(readlink "$link_path")" || return 1
     for expected_target in "$@"; do
         if [ "$actual_target" = "$expected_target" ]; then
-            rm -f -- "$link_path"
+            rm -f -- "$link_path" || return 1
             log "Removed legacy managed link: $link_path"
             return 0
         fi

@@ -316,6 +316,68 @@ test_mise_install_requires_exact_version_after_install() {
     fi
 }
 
+test_mise_install_rejects_symlinked_destination_paths() {
+    local layout target_home external linked_path
+
+    for layout in local bin; do
+        target_home="$TEST_ROOT/mise-symlinked-$layout-target"
+        external="$TEST_ROOT/mise-symlinked-$layout-external"
+        mkdir -p "$target_home" "$external"
+        if [ "$layout" = 'local' ]; then
+            ln -s "$external" "$target_home/.local"
+            linked_path="$target_home/.local"
+        else
+            mkdir -p "$target_home/.local"
+            ln -s "$external" "$target_home/.local/bin"
+            linked_path="$target_home/.local/bin"
+        fi
+
+        if (
+            export DOTFILES_TARGET_HOME="$target_home"
+            # shellcheck source=/dev/null
+            . "$INSTALLER_RUNTIME_PATH"
+            run_verified_installer() {
+                mkdir -p "$external/installer-was-called"
+                return 91
+            }
+
+            install_mise_if_needed
+        ); then
+            fail "mise installation accepted a symlinked $layout destination parent"
+        fi
+        assert_link_points_to "$linked_path" "$external"
+        if find "$external" -mindepth 1 -print -quit | grep -q .; then
+            fail "mise installation wrote through symlinked $layout destination parent"
+        fi
+    done
+
+    target_home="$TEST_ROOT/mise-symlinked-binary-target"
+    external="$TEST_ROOT/mise-symlinked-binary-external"
+    mkdir -p "$target_home/.local/bin" "$external"
+    printf '%s\n' '#!/usr/bin/env bash' \
+        'printf "%s\n" "2026.8.8 macos-arm64 (2026-08-18)"' \
+        > "$external/mise"
+    chmod +x "$external/mise"
+    ln -s "$external/mise" "$target_home/.local/bin/mise"
+
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        run_verified_installer() {
+            printf 'mutated\n' > "$MISE_INSTALL_PATH"
+            return 92
+        }
+
+        install_mise_if_needed
+    ); then
+        fail 'mise installation accepted a symlinked binary destination'
+    fi
+    assert_link_points_to "$target_home/.local/bin/mise" "$external/mise"
+    assert_file_contains "$external/mise" '2026.8.8 macos-arm64'
+    assert_file_not_contains "$external/mise" 'mutated'
+}
+
 test_bootstrap_uses_exact_binary_target_home_and_root_config() {
     local source_link="$TEST_ROOT/bootstrap-source-link"
     local target_home="$TEST_ROOT/bootstrap-target"
@@ -387,6 +449,51 @@ test_only_exact_legacy_links_are_removed() {
         cleanup_legacy_managed_links
     )
     assert_path_missing "$target_home/.local/share/devbox/global/default"
+}
+
+test_legacy_cleanup_propagates_unlink_failure() {
+    local target_home="$TEST_ROOT/unlink-failure-target"
+    local managed_link="$target_home/.local/bin/ha"
+
+    mkdir -p "$target_home/.local/bin"
+    ln -s "$REPO_DIR/bin/ha" "$managed_link"
+
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        rm() { return 73; }
+
+        cleanup_legacy_managed_links
+    ); then
+        fail 'legacy cleanup ignored an unlink failure'
+    fi
+    assert_link_points_to "$managed_link" "$REPO_DIR/bin/ha"
+}
+
+test_cleanup_preserves_links_below_symlinked_target_parents() {
+    local target_home="$TEST_ROOT/symlinked-cleanup-target"
+    local external="$TEST_ROOT/symlinked-cleanup-external"
+    local managed_link="$external/bin/ha"
+
+    mkdir -p "$target_home" "$external/bin"
+    printf 'keep external data\n' > "$external/sentinel"
+    ln -s "$external" "$target_home/.local"
+    ln -s "$REPO_DIR/bin/ha" "$managed_link"
+
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+
+        cleanup_legacy_managed_links
+    ); then
+        fail 'legacy cleanup accepted a symlinked target parent'
+    fi
+    assert_link_points_to "$target_home/.local" "$external"
+    assert_link_points_to "$managed_link" "$REPO_DIR/bin/ha"
+    assert_eq 'keep external data' "$(cat "$external/sentinel")" \
+        'cleanup changed data below a symlinked target parent'
 }
 
 test_regular_files_and_unrelated_links_are_preserved() {
@@ -461,8 +568,11 @@ test_verified_installer_cleans_temporary_directory_on_signal
 test_preflight_failure_prevents_main_mutations
 test_mise_install_passes_exact_url_hash_and_destination
 test_mise_install_requires_exact_version_after_install
+test_mise_install_rejects_symlinked_destination_paths
 test_bootstrap_uses_exact_binary_target_home_and_root_config
 test_only_exact_legacy_links_are_removed
+test_legacy_cleanup_propagates_unlink_failure
+test_cleanup_preserves_links_below_symlinked_target_parents
 test_regular_files_and_unrelated_links_are_preserved
 test_invalid_source_or_target_home_fails_before_mutation
 printf 'PASS: %s\n' "$(basename "$0")"

@@ -188,10 +188,11 @@ different origins, and non-Git conflicts; it must never force-reset user work.
 - `~/.config/wezterm/wezterm.lua` as an individual file;
 - `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md` as individual files.
 
-The file-level Zsh, WezTerm, Codex, and Claude mappings preserve runtime and
-machine-local files beside the managed files. The configuration does not use
-`[bootstrap.mise_shell_activate]` because `.zshrc` is already declaratively
-managed.
+The file-level Zsh, Codex, and Claude mappings preserve runtime files beside
+the managed files. The WezTerm mapping manages only its portable configuration
+file; it has no optional local configuration or SSH-host import. The
+configuration does not use `[bootstrap.mise_shell_activate]` because `.zshrc`
+is already declaratively managed.
 
 If an unmanaged target already exists, bootstrap fails and identifies the
 conflict. Neither `install.sh` nor documented commands pass
@@ -229,9 +230,12 @@ The repository removes:
 - `bin/ha`;
 - `.config/dotfiles/agents.local.example` and its local-state ignore entries;
 - the Herdr `[[keys.command]]` block that invokes `ha`;
-- the WezTerm command shortcut introduced with the Herdr/agent workflow;
+- WezTerm pane creation, pane navigation, SSH-host binding, and optional local
+  configuration behavior;
+- `.config/wezterm/local.lua.example` and its ignore entry;
 - `tests/test_agent.sh` and its test-runner and CI references; and
-- README instructions for `ha` and `agents.local`.
+- README instructions for `ha`, `agents.local`, local WezTerm setup, and SSH
+  host bindings.
 
 Herdr itself remains managed at version `0.7.5`. Its `onboarding`, `terminal`,
 and `ui` settings remain in `.config/herdr/config.toml`.
@@ -314,6 +318,7 @@ The README is rewritten around the mise-only workflow. It documents:
 - the exact tool list and deliberately unmanaged or removed tools;
 - first installation, rerun, conflict recovery, and update commands;
 - Herdr use without `ha`;
+- portable WezTerm visual and startup behavior without local SSH configuration;
 - the Rust/rustup lockfile limitation and manual stale `~/.profile` cleanup;
   and
 - that removing repository management does not uninstall system software.

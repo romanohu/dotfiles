@@ -22,7 +22,7 @@
 - Do not edit `~/.profile` automatically.
 - Refuse unmanaged dotfile conflicts; never pass `--force-dotfiles` or create automatic backups.
 - Keep `bash tests/run.sh` offline and independent of mise, Nix, Devbox, the network, and host tool versions.
-- Preserve current public Codex/Claude guidance and machine-local WezTerm state.
+- Preserve current public Codex/Claude guidance; do not modify repository-external files.
 
 ## File Structure
 
@@ -45,9 +45,9 @@
 - `.config/zsh/.zshrc` — pinned repository layout and mise activation.
 - `.config/zsh/aliases.zsh` — remove the Devbox alias.
 - `.config/herdr/config.toml` — remove the `ha` command block.
-- `.config/wezterm/wezterm.lua` — remove the obsolete command-launch shortcut.
+- `.config/wezterm/wezterm.lua` — retain only portable visual, startup, and QuickSelect behavior.
 - `.config/git/ignore` — remove Nix/Devbox patterns.
-- `.gitignore` — remove Devbox and agent-launcher state patterns.
+- `.gitignore` — remove Devbox, agent-launcher state, and WezTerm local-config patterns.
 - `tests/run.sh` — add the mise test explicitly and remove the agent test.
 - `tests/test_runner.sh` — replace inherited Devbox-state coverage with mise-global isolation coverage.
 - `.github/workflows/validate.yml` — remove deleted files and JSON checks.
@@ -58,6 +58,7 @@
 - `.config/devbox/global/devbox.lock`
 - `.config/devbox/global/run-tests.sh`
 - `.config/dotfiles/agents.local.example`
+- `.config/wezterm/local.lua.example`
 - `bin/ha`
 - `tests/test_agent.sh`
 
@@ -572,6 +573,7 @@ git commit -m "feat: bootstrap dotfiles with pinned mise"
 - Delete: `.config/devbox/global/devbox.lock`
 - Delete: `.config/devbox/global/run-tests.sh`
 - Delete: `.config/dotfiles/agents.local.example`
+- Delete: `.config/wezterm/local.lua.example`
 - Delete: `bin/ha`
 - Delete: `tests/test_agent.sh`
 
@@ -620,6 +622,7 @@ test_herdr_remains_without_ha_command() {
 test_removed_paths_are_not_active() {
     assert_path_missing "$REPO_DIR/.config/devbox"
     assert_path_missing "$REPO_DIR/.config/dotfiles/agents.local.example"
+    assert_path_missing "$REPO_DIR/.config/wezterm/local.lua.example"
     assert_path_missing "$REPO_DIR/bin/ha"
     assert_path_missing "$REPO_DIR/tests/test_agent.sh"
     assert_file_not_contains "$REPO_DIR/.config/wezterm/wezterm.lua" \
@@ -627,9 +630,10 @@ test_removed_paths_are_not_active() {
 }
 ```
 
-Retain the valuable Git helper, private WezTerm, Neovim absence, Codex/Claude
-allowlist, and no-secret assertions. Remove README and CI assertions until
-Tasks 4 and 5 add their final forms.
+Retain the valuable Git helper, portable WezTerm visual/startup, Neovim
+absence, Codex/Claude allowlist, and no-secret assertions. Assert that pane
+creation/navigation and SSH/local-configuration tokens are absent. Remove
+README and CI assertions until Tasks 4 and 5 add their final forms.
 
 Update `tests/test_runner.sh` so its inherited-environment regression exports
 an unrelated `MISE_GLOBAL_CONFIG_FILE` instead of `DEVBOX_DATA_DIR` and confirms
@@ -679,12 +683,14 @@ history options and alias sourcing. Delete only the `cddev` alias from
 `aliases.zsh`.
 
 Remove the full `[[keys.command]]` block from Herdr while preserving
-`onboarding`, `[terminal]`, and `[ui]`. Remove only the `LEADER|SHIFT` `N`
-`SpawnCommandInNewTab` entry from WezTerm.
+`onboarding`, `[terminal]`, and `[ui]`. In WezTerm, remove pane creation and
+navigation bindings, the optional local.lua import and SSH-host binding loop,
+and the obsolete command shortcut. Keep font fallback, visual settings,
+`LEADER` `c` QuickSelect, and startup maximization.
 
 - [ ] **Step 4: Delete legacy files and active ignore entries**
 
-Delete the six paths listed in this task. In `tests/run.sh`, remove
+Delete the seven paths listed in this task. In `tests/run.sh`, remove
 `test_agent.sh` from both the ordered list and duplicate suppression case.
 
 Remove these root ignore entries:
@@ -704,8 +710,9 @@ Remove this block from `.config/git/ignore`:
 .nix-profile/
 ```
 
-Do not remove `.worktrees/`, agent-guidance allowlists, WezTerm local config, or
-the general Windows filesystem ignore entries.
+Do not remove `.worktrees/`, agent-guidance allowlists, or the general Windows
+filesystem ignore entries. Do not access or modify a repository-external
+`~/.config/wezterm/local.lua` file.
 
 - [ ] **Step 5: Run configuration, runner, and shell checks**
 
@@ -859,6 +866,9 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_not_contains "$readme" 'NIX_INSTALLER'
     assert_file_not_contains "$readme" 'agents.local'
     assert_file_not_contains "$readme" '`ha`'
+    assert_file_not_contains "$readme" 'local.lua'
+    assert_file_not_contains "$readme" 'SSH'
+    assert_file_contains "$readme" 'WezTerm visual settings'
 }
 ```
 
@@ -887,7 +897,7 @@ Use this section order:
 ## ABCI and other managed Linux hosts
 ## Existing-file conflicts
 ## Shell and Herdr usage
-## Local WezTerm settings
+## WezTerm visual settings
 ## Tests
 ## Updating pins
 ## Rust notes
@@ -937,9 +947,10 @@ ${EDITOR:-vi} ~/.profile
 ```
 
 Tell the user to remove only a line that sources a nonexistent old rustup env;
-never instruct `install.sh` to edit it. Keep the local WezTerm example and
-Herdr launch/update guidance, but remove WezTerm's removed Herdr shortcut and
-all `ha`/`agents.local` guidance.
+never instruct `install.sh` to edit it. Remove local WezTerm setup,
+local-example, SSH-host, pane/navigation, and removed Herdr-shortcut guidance.
+Retain only portable WezTerm visual and startup-maximize guidance, alongside
+Herdr use without `ha` or `agents.local`.
 
 - [ ] **Step 4: Run documentation and full offline tests**
 

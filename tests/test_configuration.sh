@@ -52,6 +52,7 @@ test_herdr_remains_without_ha_command() {
 test_removed_paths_are_not_active() {
     assert_path_missing "$REPO_DIR/.config/devbox"
     assert_path_missing "$REPO_DIR/.config/dotfiles/agents.local.example"
+    assert_path_missing "$REPO_DIR/.config/wezterm/local.lua.example"
     assert_path_missing "$REPO_DIR/bin/ha"
     assert_path_missing "$REPO_DIR/tests/test_agent.sh"
     assert_file_not_contains "$REPO_DIR/.config/wezterm/wezterm.lua" \
@@ -84,44 +85,33 @@ test_daily_shell_and_git_defaults_are_safe_and_pinned() {
     assert_file_contains "$git_config" 'autoSetupRemote = true'
 }
 
-test_wezterm_has_portable_fonts_without_monitoring_layout() {
+test_wezterm_keeps_portable_visual_and_startup_behavior() {
     local config="$REPO_DIR/.config/wezterm/wezterm.lua"
 
     assert_file_not_contains "$config" 'setup_monitoring_layout'
     assert_file_not_contains "$config" "{ key = 's', mods = 'LEADER'"
+    assert_file_not_contains "$config" 'split_current_pane'
+    assert_file_not_contains "$config" 'pane:split'
+    assert_file_not_contains "$config" 'ActivatePaneDirection'
+    assert_file_not_contains "$config" 'pcall(dofile'
+    assert_file_not_contains "$config" 'local_config'
+    assert_file_not_contains "$config" 'local.lua'
+    assert_file_not_contains "$config" 'ssh_hosts'
+    assert_file_not_contains "$config" 'SpawnTab'
+    assert_file_not_contains "$config" 'DomainName'
+    assert_file_not_contains "$config" 'SSH:'
     assert_file_contains "$config" 'wezterm.font_with_fallback'
     assert_file_contains "$config" "'JetBrains Mono'"
     assert_file_contains "$config" "'Menlo'"
     assert_file_contains "$config" "'monospace'"
+    assert_file_contains "$config" "{ key = 'c', mods = 'LEADER', action = act.QuickSelect }"
+    assert_file_contains "$config" 'wezterm.on("gui-startup"'
+    assert_file_contains "$config" 'mux.spawn_window'
+    assert_file_contains "$config" 'window:gui_window():maximize()'
 }
 
 test_unused_shell_shortcuts_are_absent() {
     assert_file_not_contains "$REPO_DIR/.config/zsh/aliases.zsh" "alias memo_on="
-}
-
-test_wezterm_loads_private_ssh_bindings_from_local_config() {
-    local config="$REPO_DIR/.config/wezterm/wezterm.lua"
-    local example="$REPO_DIR/.config/wezterm/local.lua.example"
-
-    assert_file_not_contains "$config" 'SSH:popssh'
-    assert_file_not_contains "$config" 'SSH:duffy'
-    assert_file_not_contains "$config" 'SSH:hibana'
-    assert_file_not_contains "$config" 'SSH:omokage'
-    assert_file_not_contains "$config" 'SSH:roko'
-    assert_file_contains "$config" 'pcall(dofile'
-    assert_file_contains "$config" '.config/wezterm/local.lua'
-    assert_file_contains "$config" 'local_config.ssh_hosts'
-    assert_file_contains "$config" "'SSH:' .. host.domain"
-    assert_file_contains "$example" 'ssh_hosts'
-    assert_file_contains "$example" 'example.invalid'
-    assert_file_contains "$example" 'key ='
-    assert_file_contains "$example" 'domain ='
-    assert_file_contains "$example" 'label ='
-    assert_file_not_contains "$example" 'popssh'
-    assert_file_not_contains "$example" 'duffy'
-    assert_file_not_contains "$example" 'hibana'
-    assert_file_not_contains "$example" 'omokage'
-    assert_file_not_contains "$example" 'roko'
 }
 
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent() {
@@ -146,8 +136,7 @@ test_shell_uses_mise_without_devbox_or_cargo_path
 test_herdr_remains_without_ha_command
 test_removed_paths_are_not_active
 test_daily_shell_and_git_defaults_are_safe_and_pinned
-test_wezterm_has_portable_fonts_without_monitoring_layout
+test_wezterm_keeps_portable_visual_and_startup_behavior
 test_unused_shell_shortcuts_are_absent
-test_wezterm_loads_private_ssh_bindings_from_local_config
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent
 printf 'PASS: %s\n' "$(basename "$0")"

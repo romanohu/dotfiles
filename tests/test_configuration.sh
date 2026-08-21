@@ -197,6 +197,46 @@ test_tracked_private_state_and_historical_wezterm_hosts_are_absent() {
     fi
 }
 
+test_vscode_lightweight_settings_are_exact_and_personal_state_free() {
+    local settings="$REPO_DIR/.config/vscode/settings.json"
+    local expected
+
+    expected=$(printf '%s\n' \
+        '{' \
+        '  "files.watcherExclude": {' \
+        '    "**/.git/objects/**": true,' \
+        '    "**/node_modules/**": true,' \
+        '    "**/target/**": true,' \
+        '    "**/.venv/**": true,' \
+        '    "**/.cache/**": true,' \
+        '    "**/dist/**": true,' \
+        '    "**/build/**": true' \
+        '  },' \
+        '  "search.exclude": {' \
+        '    "**/.git/objects/**": true,' \
+        '    "**/node_modules/**": true,' \
+        '    "**/target/**": true,' \
+        '    "**/.venv/**": true,' \
+        '    "**/.cache/**": true,' \
+        '    "**/dist/**": true,' \
+        '    "**/build/**": true' \
+        '  },' \
+        '  "editor.minimap.enabled": false,' \
+        '  "breadcrumbs.enabled": false,' \
+        '  "editor.codeLens": false,' \
+        '  "workbench.startupEditor": "none"' \
+        '}')
+
+    assert_path_exists "$settings"
+    assert_eq "$expected" "$(cat "$settings")" \
+        'VS Code settings must remain the exact lightweight JSON contract'
+    assert_file_not_contains "$settings" 'remote.SSH'
+    assert_file_not_contains "$settings" 'github.copilot'
+    assert_file_not_contains "$settings" 'password'
+    assert_file_not_contains "$settings" 'token'
+    assert_file_not_contains "$settings" 'hostname'
+}
+
 test_neovim_configuration_is_not_tracked
 test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
@@ -208,4 +248,5 @@ test_daily_shell_and_git_defaults_are_safe_and_pinned
 test_wezterm_keeps_portable_visual_and_startup_behavior
 test_unused_shell_shortcuts_are_absent
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent
+test_vscode_lightweight_settings_are_exact_and_personal_state_free
 printf 'PASS: %s\n' "$(basename "$0")"

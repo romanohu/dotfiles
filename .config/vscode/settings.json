@@ -1,0 +1,24 @@
+{
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/target/**": true,
+    "**/.venv/**": true,
+    "**/.cache/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  },
+  "search.exclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/target/**": true,
+    "**/.venv/**": true,
+    "**/.cache/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  },
+  "editor.minimap.enabled": false,
+  "breadcrumbs.enabled": false,
+  "editor.codeLens": false,
+  "workbench.startupEditor": "none"
+}

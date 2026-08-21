@@ -317,6 +317,62 @@ validate_managed_dotfile_target() {
     fi
 }
 
+vscode_user_dir_for_platform() {
+    local platform="$1"
+
+    case "$platform" in
+        Darwin) printf '%s\n' "$TARGET_HOME/Library/Application Support/Code/User" ;;
+        Linux) printf '%s\n' "$TARGET_HOME/.config/Code/User" ;;
+        *)
+            warn "Unsupported VS Code platform: $platform"
+            return 1
+            ;;
+    esac
+}
+
+vscode_settings_target_for_platform() {
+    local user_dir
+
+    user_dir="$(vscode_user_dir_for_platform "$1")" || return 1
+    printf '%s/settings.json\n' "$user_dir"
+}
+
+preflight_vscode_settings() {
+    local platform="${1:-$(uname -s)}"
+    local user_dir
+    local target
+
+    user_dir="$(vscode_user_dir_for_platform "$platform")" || return 1
+    target="$user_dir/settings.json"
+    validate_managed_dotfile_target \
+        "$target" "$DOT_DIR/.config/vscode/settings.json" || return 1
+    if [ ! -d "$user_dir" ]; then
+        [ ! -e "$user_dir" ] && [ ! -L "$user_dir" ] || {
+            warn "Refusing VS Code settings path that is not a directory: $user_dir"
+            return 1
+        }
+        log 'VS Code settings: skipped (User directory is absent)'
+    fi
+}
+
+setup_vscode_settings() {
+    local platform="${1:-$(uname -s)}"
+    local user_dir
+    local target
+    local source="$DOT_DIR/.config/vscode/settings.json"
+
+    preflight_vscode_settings "$platform" || return 1
+    user_dir="$(vscode_user_dir_for_platform "$platform")" || return 1
+    [ -d "$user_dir" ] || return 0
+    target="$user_dir/settings.json"
+    [ -L "$target" ] && {
+        log "VS Code settings: already linked $target"
+        return 0
+    }
+    ln -s "$source" "$target" || return 1
+    log "VS Code settings: linked $target"
+}
+
 preflight_managed_dotfiles() {
     resolve_target_home || return 1
     validate_managed_dotfile_target \
@@ -340,6 +396,7 @@ preflight_managed_dotfiles() {
         "$TARGET_HOME/.codex/AGENTS.md" "$DOT_DIR/.codex/AGENTS.md" || return 1
     validate_managed_dotfile_target \
         "$TARGET_HOME/.claude/CLAUDE.md" "$DOT_DIR/.claude/CLAUDE.md" || return 1
+    preflight_vscode_settings || return 1
 }
 
 remove_exact_managed_link() {
@@ -412,6 +469,8 @@ validate_environment() {
     [ -d "$SOURCE_DIR" ] || fail "Dotfiles source directory is unavailable: $SOURCE_DIR"
     [ -d "$DOT_DIR" ] || fail "Physical dotfiles directory is unavailable: $DOT_DIR"
     [ -f "$DOT_DIR/mise.toml" ] || fail "Root mise configuration is unavailable: $DOT_DIR/mise.toml"
+    [ -f "$DOT_DIR/.config/vscode/settings.json" ] || \
+        fail "VS Code settings are unavailable: $DOT_DIR/.config/vscode/settings.json"
     resolve_target_home || fail "Invalid target home: $TARGET_HOME_INPUT"
 
     case "$(uname -s)" in
@@ -427,6 +486,7 @@ main() {
     install_mise_if_needed || return 1
     cleanup_legacy_managed_links || return 1
     run_mise_bootstrap || return 1
+    setup_vscode_settings || return 1
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

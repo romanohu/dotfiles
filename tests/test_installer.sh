@@ -807,6 +807,131 @@ test_invalid_source_or_target_home_fails_before_mutation() {
     assert_path_missing "$mutations"
 }
 
+test_vscode_settings_target_supports_only_macos_and_linux() {
+    local target_home="$TEST_ROOT/vscode-target-home"
+
+    mkdir -p "$target_home"
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+
+        assert_eq "$target_home/Library/Application Support/Code/User" \
+            "$(vscode_user_dir_for_platform Darwin)"
+        assert_eq "$target_home/.config/Code/User" \
+            "$(vscode_user_dir_for_platform Linux)"
+        assert_eq "$target_home/Library/Application Support/Code/User/settings.json" \
+            "$(vscode_settings_target_for_platform Darwin)"
+        assert_eq "$target_home/.config/Code/User/settings.json" \
+            "$(vscode_settings_target_for_platform Linux)"
+        if vscode_user_dir_for_platform Windows; then
+            fail 'VS Code target calculation must reject Windows'
+        fi
+    )
+}
+
+test_vscode_settings_skip_without_user_directory() {
+    local target_home="$TEST_ROOT/vscode-skip-home"
+
+    mkdir -p "$target_home"
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_vscode_settings Darwin
+        setup_vscode_settings Darwin
+    )
+    assert_path_missing "$target_home/Library"
+}
+
+test_vscode_settings_conflicts_are_preserved() {
+    local target_home="$TEST_ROOT/vscode-conflict-home"
+    local user_dir="$target_home/.config/Code/User"
+    local target="$user_dir/settings.json"
+    local external="$TEST_ROOT/vscode-conflict-external"
+
+    mkdir -p "$user_dir" "$external"
+    printf 'keep settings\n' > "$target"
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        if setup_vscode_settings Linux; then
+            fail 'VS Code settings conflict was accepted'
+        fi
+    )
+    assert_eq 'keep settings' "$(cat "$target")" \
+        'VS Code settings conflict was overwritten'
+
+    rm -f "$target"
+    ln -s "$external" "$target"
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        setup_vscode_settings Linux
+    ); then
+        fail 'unrelated VS Code settings symlink was accepted'
+    fi
+    assert_link_points_to "$target" "$external"
+}
+
+test_vscode_settings_rejects_symlinked_ancestor() {
+    local target_home="$TEST_ROOT/vscode-ancestor-home"
+    local external="$TEST_ROOT/vscode-ancestor-external"
+
+    mkdir -p "$target_home" "$external/Code/User"
+    ln -s "$external" "$target_home/.config"
+    if (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        setup_vscode_settings Linux
+    ); then
+        fail 'VS Code settings below a symlinked ancestor were accepted'
+    fi
+    assert_link_points_to "$target_home/.config" "$external"
+}
+
+test_vscode_settings_link_is_idempotent() {
+    local target_home="$TEST_ROOT/vscode-idempotent-home"
+    local user_dir="$target_home/Library/Application Support/Code/User"
+    local target="$user_dir/settings.json"
+
+    mkdir -p "$user_dir"
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        setup_vscode_settings Darwin
+        setup_vscode_settings Darwin
+    )
+    assert_link_points_to "$target" "$REPO_DIR/.config/vscode/settings.json"
+}
+
+test_main_sets_up_vscode_after_mise_bootstrap() {
+    local target_home="$TEST_ROOT/vscode-main-order-home"
+    local calls="$TEST_ROOT/vscode-main-order-calls"
+
+    mkdir -p "$target_home"
+    (
+        export DOTFILES_TARGET_HOME="$target_home"
+        # shellcheck source=/dev/null
+        . "$INSTALLER_RUNTIME_PATH"
+        preflight_required_commands() { printf 'preflight\n' >> "$calls"; }
+        validate_environment() { printf 'environment\n' >> "$calls"; }
+        preflight_managed_dotfiles() { printf 'managed\n' >> "$calls"; }
+        install_mise_if_needed() { printf 'mise\n' >> "$calls"; }
+        cleanup_legacy_managed_links() { printf 'cleanup\n' >> "$calls"; }
+        run_mise_bootstrap() { printf 'bootstrap\n' >> "$calls"; }
+        setup_vscode_settings() { printf 'vscode\n' >> "$calls"; }
+        main
+    )
+    assert_eq "$(printf '%s\n' preflight environment managed mise cleanup bootstrap vscode)" \
+        "$(cat "$calls")" \
+        'main must set up VS Code only after mise bootstrap'
+}
+
 test_install_script_has_source_guard
 test_verify_sha256_accepts_match_and_rejects_mismatch
 test_sha256_file_rejects_symlinks_and_option_like_paths
@@ -829,4 +954,10 @@ test_legacy_cleanup_propagates_unlink_failure
 test_cleanup_preserves_links_below_symlinked_target_parents
 test_regular_files_and_unrelated_links_are_preserved
 test_invalid_source_or_target_home_fails_before_mutation
+test_vscode_settings_target_supports_only_macos_and_linux
+test_vscode_settings_skip_without_user_directory
+test_vscode_settings_conflicts_are_preserved
+test_vscode_settings_rejects_symlinked_ancestor
+test_vscode_settings_link_is_idempotent
+test_main_sets_up_vscode_after_mise_bootstrap
 printf 'PASS: %s\n' "$(basename "$0")"

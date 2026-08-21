@@ -339,9 +339,17 @@ vscode_settings_target_for_platform() {
 
 preflight_vscode_settings() {
     local platform="${1:-$(uname -s)}"
+    local announce="${2:-announce}"
     local user_dir
     local target
 
+    case "$announce" in
+        announce|quiet) ;;
+        *)
+            warn "Invalid VS Code settings preflight output mode: $announce"
+            return 1
+            ;;
+    esac
     user_dir="$(vscode_user_dir_for_platform "$platform")" || return 1
     target="$user_dir/settings.json"
     validate_managed_dotfile_target \
@@ -351,7 +359,8 @@ preflight_vscode_settings() {
             warn "Refusing VS Code settings path that is not a directory: $user_dir"
             return 1
         }
-        log 'VS Code settings: skipped (User directory is absent)'
+        [ "$announce" = quiet ] || \
+            log 'VS Code settings: skipped (User directory is absent)'
     fi
 }
 
@@ -361,7 +370,7 @@ setup_vscode_settings() {
     local target
     local source="$DOT_DIR/.config/vscode/settings.json"
 
-    preflight_vscode_settings "$platform" || return 1
+    preflight_vscode_settings "$platform" quiet || return 1
     user_dir="$(vscode_user_dir_for_platform "$platform")" || return 1
     [ -d "$user_dir" ] || return 0
     target="$user_dir/settings.json"

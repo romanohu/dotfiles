@@ -832,16 +832,20 @@ test_vscode_settings_target_supports_only_macos_and_linux() {
 
 test_vscode_settings_skip_without_user_directory() {
     local target_home="$TEST_ROOT/vscode-skip-home"
+    local logs="$TEST_ROOT/vscode-skip-logs"
 
     mkdir -p "$target_home"
     (
         export DOTFILES_TARGET_HOME="$target_home"
         # shellcheck source=/dev/null
         . "$INSTALLER_RUNTIME_PATH"
+        log() { printf '%s\n' "$1" >> "$logs"; }
         preflight_vscode_settings Darwin
         setup_vscode_settings Darwin
     )
     assert_path_missing "$target_home/Library"
+    assert_eq 'VS Code settings: skipped (User directory is absent)' "$(cat "$logs")" \
+        'missing VS Code User directory must be announced only once'
 }
 
 test_vscode_settings_conflicts_are_preserved() {

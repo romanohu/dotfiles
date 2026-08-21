@@ -467,6 +467,17 @@ Expected: exit status 0; the full byte-level contract remains covered by `test_c
 
 - [ ] **Step 4: Confirm the final diff is scoped**
 
-Run: `git diff --stat 1b5c160..HEAD -- .config/vscode/settings.json install.sh README.md tests/test_configuration.sh tests/test_installer.sh`
+Run:
 
-Expected: exactly the new settings file, installer, README, and their tests are reported; design/plan scratch docs and user VS Code data or cache paths are excluded.
+```bash
+expected_paths=$(printf '%s\n' \
+    '.config/vscode/settings.json' \
+    'README.md' \
+    'install.sh' \
+    'tests/test_configuration.sh' \
+    'tests/test_installer.sh')
+actual_paths=$(git diff --name-only 1b5c160..HEAD -- . ':(exclude)docs/superpowers/**' | LC_ALL=C sort)
+test "$actual_paths" = "$expected_paths"
+```
+
+Expected: exit status 0. The complete diff name list, excluding only `docs/superpowers/**` process artifacts, matches exactly the five feature paths; any other non-process-doc file fails the check.

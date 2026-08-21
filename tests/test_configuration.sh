@@ -239,6 +239,22 @@ test_vscode_lightweight_settings_are_exact_and_personal_state_free() {
     assert_file_not_contains "$settings" 'hostname'
 }
 
+test_readme_documents_vscode_lightweight_scope() {
+    local readme="$REPO_DIR/README.md"
+
+    assert_file_contains "$readme" 'VS Code lightweight settings'
+    assert_file_contains "$readme" 'files.watcherExclude'
+    assert_file_contains "$readme" 'search.exclude'
+    assert_file_contains "$readme" 'minimap'
+    assert_file_contains "$readme" 'breadcrumbs'
+    assert_file_contains "$readme" 'CodeLens'
+    assert_file_contains "$readme" 'Profile'
+    assert_file_contains "$readme" 'manual'
+    assert_file_contains "$readme" 'connection settings'
+    assert_file_contains "$readme" 'User directory'
+    assert_file_contains "$readme" 'does not delete VS Code cache'
+}
+
 test_neovim_configuration_is_not_tracked
 test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
@@ -251,4 +267,5 @@ test_wezterm_keeps_portable_visual_and_startup_behavior
 test_unused_shell_shortcuts_are_absent
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent
 test_vscode_lightweight_settings_are_exact_and_personal_state_free
+test_readme_documents_vscode_lightweight_scope
 printf 'PASS: %s\n' "$(basename "$0")"

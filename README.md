@@ -92,6 +92,22 @@ herdr workspace create --cwd /path/to/project --label project
 Herdr uses the active directory. Agent integrations and credentials remain
 manual and user-owned.
 
+## VS Code lightweight settings
+
+The repository manages only `.config/vscode/settings.json`. Its
+`files.watcherExclude` and `search.exclude` settings exclude common generated
+and dependency directories from file watching and search, and it disables the
+minimap, breadcrumbs, and CodeLens. On macOS the installer links it to
+`~/Library/Application Support/Code/User/settings.json`; on Linux it uses
+`~/.config/Code/User/settings.json`. If the VS Code User directory is absent, the
+installer skips this link and does not create VS Code directories.
+
+Existing `settings.json`, connection settings, extensions, profiles, and cache data
+remain user-owned. The installer does not merge or delete an existing settings
+file and does not delete VS Code cache. Use VS Code's Profiles UI manually to
+separate everyday editing from Python/Jupyter or C/C++/Rust work, enabling only
+the extensions needed for each workload.
+
 ## WezTerm visual settings
 
 The tracked WezTerm configuration contains portable visual settings: the
@@ -161,6 +177,7 @@ ${EDITOR:-vi} ~/.profile
 ├── .config
 │   ├── git
 │   ├── herdr
+│   ├── vscode
 │   ├── wezterm
 │   └── zsh
 ├── .zshenv

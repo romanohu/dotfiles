@@ -467,6 +467,6 @@ Expected: exit status 0; the full byte-level contract remains covered by `test_c
 
 - [ ] **Step 4: Confirm the final diff is scoped**
 
-Run: `git status --short && git diff --stat HEAD~3..HEAD`
+Run: `git diff --stat 1b5c160..HEAD -- .config/vscode/settings.json install.sh README.md tests/test_configuration.sh tests/test_installer.sh`
 
-Expected: only the new settings file, installer, README, and their tests are changed by the feature commits; no user VS Code data or cache paths appear.
+Expected: exactly the new settings file, installer, README, and their tests are reported; design/plan scratch docs and user VS Code data or cache paths are excluded.

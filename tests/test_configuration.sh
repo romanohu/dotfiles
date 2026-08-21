@@ -230,6 +230,8 @@ test_vscode_lightweight_settings_are_exact_and_personal_state_free() {
     assert_path_exists "$settings"
     assert_eq "$expected" "$(cat "$settings")" \
         'VS Code settings must remain the exact lightweight JSON contract'
+    assert_eq '0a' "$(tail -c 1 "$settings" | od -An -t x1 | tr -d '[:space:]')" \
+        'VS Code settings must end with a newline'
     assert_file_not_contains "$settings" 'remote.SSH'
     assert_file_not_contains "$settings" 'github.copilot'
     assert_file_not_contains "$settings" 'password'

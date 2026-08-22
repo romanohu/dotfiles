@@ -128,7 +128,9 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'Herdr'
     assert_file_contains "$readme" 'OpenCode permissions'
     assert_file_contains "$readme" 'permission mode to'
-    assert_file_contains "$readme" 'all twelve managed targets'
+    assert_file_contains "$readme" 'all thirteen managed targets'
+    assert_file_contains "$readme" '~/.config/opencode/AGENTS.md'
+    assert_file_contains "$readme" 'OpenCode global rules'
     assert_file_contains "$readme" 'system theme'
     assert_file_contains "$readme" \
         'Codex configuration and approval behavior remain user-owned'
@@ -246,6 +248,16 @@ test_opencode_system_theme_is_shared() {
         'OpenCode must use the terminal-adaptive system theme'
 }
 
+test_opencode_global_agents_is_shared() {
+    local config="$REPO_DIR/.config/opencode/AGENTS.md"
+    local source="$REPO_DIR/.codex/AGENTS.md"
+
+    assert_path_exists "$config"
+    assert_path_exists "$source"
+    assert_eq "$(cat "$source")" "$(cat "$config")" \
+        'OpenCode global AGENTS.md must match the shared rules'
+}
+
 test_unused_shell_shortcuts_are_absent() {
     assert_file_not_contains "$REPO_DIR/.config/zsh/aliases.zsh" "alias memo_on="
 }
@@ -331,6 +343,7 @@ test_neovim_configuration_is_not_tracked
 test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
 test_opencode_system_theme_is_shared
+test_opencode_global_agents_is_shared
 test_ci_runs_only_host_independent_checks
 test_herdr_remains_without_ha_command
 test_readme_documents_mise_setup_and_boundaries

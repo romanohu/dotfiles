@@ -567,6 +567,7 @@ test_exact_managed_dotfile_links_are_idempotent() {
         '.config/wezterm/wezterm.lua' '.config/wezterm/wezterm.lua' \
         '.config/opencode/opencode.jsonc' '.config/opencode/opencode.jsonc' \
         '.config/opencode/tui.json' '.config/opencode/tui.json' \
+        '.config/opencode/AGENTS.md' '.config/opencode/AGENTS.md' \
         '.codex/AGENTS.md' '.codex/AGENTS.md' \
         '.claude/CLAUDE.md' '.claude/CLAUDE.md'
     while [ "$#" -gt 0 ]; do
@@ -585,10 +586,12 @@ test_exact_managed_dotfile_links_are_idempotent() {
         preflight_managed_dotfiles
     )
 
-    assert_eq '12' "$(find "$target_home" -type l | wc -l | tr -d ' ')" \
+    assert_eq '13' "$(find "$target_home" -type l | wc -l | tr -d ' ')" \
         'correct managed links changed during repeated preflight'
     assert_link_points_to "$target_home/.config/mise/config.toml" "$REPO_DIR/mise.toml"
     assert_link_points_to "$target_home/.claude/CLAUDE.md" "$REPO_DIR/.claude/CLAUDE.md"
+    assert_link_points_to "$target_home/.config/opencode/AGENTS.md" \
+        "$REPO_DIR/.config/opencode/AGENTS.md"
 }
 
 test_each_managed_dotfile_target_is_preflighted() {
@@ -606,6 +609,7 @@ test_each_managed_dotfile_target_is_preflighted() {
         '.config/wezterm/wezterm.lua' \
         '.config/opencode/opencode.jsonc' \
         '.config/opencode/tui.json' \
+        '.config/opencode/AGENTS.md' \
         '.codex/AGENTS.md' \
         '.claude/CLAUDE.md'; do
         index=$((index + 1))
@@ -625,7 +629,7 @@ test_each_managed_dotfile_target_is_preflighted() {
         assert_eq "preserve target $index" "$(cat "$target")" \
             "preflight changed rejected managed target: $relative"
     done
-    assert_eq '12' "$index" 'managed-target preflight fixture count changed'
+    assert_eq '13' "$index" 'managed-target preflight fixture count changed'
 }
 
 test_bootstrap_uses_exact_binary_target_home_and_root_config() {

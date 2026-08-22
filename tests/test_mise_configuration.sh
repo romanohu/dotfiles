@@ -202,6 +202,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
         '"~/.config/zsh/aliases.zsh" = ".config/zsh/aliases.zsh"' \
         '"~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"' \
         '"~/.config/opencode/opencode.jsonc" = ".config/opencode/opencode.jsonc"' \
+        '"~/.config/opencode/tui.json" = ".config/opencode/tui.json"' \
         '"~/.codex/AGENTS.md" = ".codex/AGENTS.md"' \
         '"~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"')
     actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[dotfiles]')

@@ -128,7 +128,8 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'Herdr'
     assert_file_contains "$readme" 'OpenCode permissions'
     assert_file_contains "$readme" 'permission mode to'
-    assert_file_contains "$readme" 'all eleven managed targets'
+    assert_file_contains "$readme" 'all twelve managed targets'
+    assert_file_contains "$readme" 'system theme'
     assert_file_contains "$readme" \
         'Codex configuration and approval behavior remain user-owned'
     assert_eq '1' "$(grep -F -x -c -- \
@@ -231,6 +232,20 @@ test_opencode_default_permission_is_shared() {
     assert_file_not_contains "$config" 'sandbox_mode'
 }
 
+test_opencode_system_theme_is_shared() {
+    local config="$REPO_DIR/.config/opencode/tui.json"
+    local expected
+
+    expected=$(printf '%s\n' \
+        '{' \
+        '  "$schema": "https://opencode.ai/tui.json",' \
+        '  "theme": "system"' \
+        '}')
+    assert_path_exists "$config"
+    assert_eq "$expected" "$(cat "$config")" \
+        'OpenCode must use the terminal-adaptive system theme'
+}
+
 test_unused_shell_shortcuts_are_absent() {
     assert_file_not_contains "$REPO_DIR/.config/zsh/aliases.zsh" "alias memo_on="
 }
@@ -322,6 +337,7 @@ test_removed_paths_are_not_active
 test_daily_shell_and_git_defaults_are_safe_and_pinned
 test_wezterm_keeps_portable_visual_and_startup_behavior
 test_opencode_default_permission_is_shared
+test_opencode_system_theme_is_shared
 test_unused_shell_shortcuts_are_absent
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent
 test_vscode_lightweight_settings_are_exact_and_personal_state_free

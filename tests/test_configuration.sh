@@ -183,6 +183,23 @@ test_wezterm_keeps_portable_visual_and_startup_behavior() {
     assert_file_contains "$config" 'window:gui_window():maximize()'
 }
 
+test_opencode_default_permission_is_shared() {
+    local config="$REPO_DIR/.config/opencode/opencode.jsonc"
+    local expected
+
+    expected=$(printf '%s\n' \
+        '{' \
+        '  "$schema": "https://opencode.ai/config.json",' \
+        '  "plugin": ["superpowers@git+https://github.com/obra/superpowers.git"],' \
+        '  "permission": "allow"' \
+        '}')
+    assert_path_exists "$config"
+    assert_eq "$expected" "$(cat "$config")" \
+        'OpenCode config must preserve the plugin and set allow permissions'
+    assert_file_not_contains "$config" 'approval_policy'
+    assert_file_not_contains "$config" 'sandbox_mode'
+}
+
 test_unused_shell_shortcuts_are_absent() {
     assert_file_not_contains "$REPO_DIR/.config/zsh/aliases.zsh" "alias memo_on="
 }
@@ -273,6 +290,7 @@ test_readme_documents_mise_setup_and_boundaries
 test_removed_paths_are_not_active
 test_daily_shell_and_git_defaults_are_safe_and_pinned
 test_wezterm_keeps_portable_visual_and_startup_behavior
+test_opencode_default_permission_is_shared
 test_unused_shell_shortcuts_are_absent
 test_tracked_private_state_and_historical_wezterm_hosts_are_absent
 test_vscode_lightweight_settings_are_exact_and_personal_state_free

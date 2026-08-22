@@ -30,6 +30,12 @@ test_public_agent_guidance_excludes_runtime_state() {
 
 test_shell_uses_mise_without_devbox_or_cargo_path() {
     local zshrc="$REPO_DIR/.config/zsh/.zshrc"
+    local cache_export='export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"'
+    local compdump_export='export ZSH_COMPDUMP="$ZSH_CACHE_DIR/.zcompdump-${ZSH_VERSION}"'
+    local source_statement='    source "$ZSH/oh-my-zsh.sh"'
+    local cache_export_count
+    local compdump_export_count
+    local source_statement_count
     local cache_line
     local compdump_line
     local source_line
@@ -38,15 +44,21 @@ test_shell_uses_mise_without_devbox_or_cargo_path() {
     assert_file_contains "$zshrc" 'eval "$(mise activate zsh)"'
     assert_file_contains "$zshrc" \
         'export ZSH_CUSTOM="$HOME/.config/zsh/custom"'
-    assert_file_contains "$zshrc" \
-        'export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"'
-    assert_file_contains "$zshrc" \
-        'export ZSH_COMPDUMP="$ZSH_CACHE_DIR/.zcompdump-${ZSH_VERSION}"'
+
+    cache_export_count=$(grep -F -x -c -- "$cache_export" "$zshrc" || true)
+    compdump_export_count=$(grep -F -x -c -- "$compdump_export" "$zshrc" || true)
+    source_statement_count=$(grep -F -x -c -- "$source_statement" "$zshrc" || true)
+    assert_eq '1' "$cache_export_count" \
+        'expected exactly one full ZSH_CACHE_DIR export'
+    assert_eq '1' "$compdump_export_count" \
+        'expected exactly one full ZSH_COMPDUMP export'
+    assert_eq '1' "$source_statement_count" \
+        'expected exactly one full Oh My Zsh source statement'
     assert_file_not_contains "$zshrc" 'ZSH_DISABLE_COMPFIX=true'
 
-    cache_line=$(grep -nF 'export ZSH_CACHE_DIR=' "$zshrc" | cut -d: -f1)
-    compdump_line=$(grep -nF 'export ZSH_COMPDUMP=' "$zshrc" | cut -d: -f1)
-    source_line=$(grep -nF 'source "$ZSH/oh-my-zsh.sh"' "$zshrc" | cut -d: -f1)
+    cache_line=$(grep -n -F -x -- "$cache_export" "$zshrc" | cut -d: -f1)
+    compdump_line=$(grep -n -F -x -- "$compdump_export" "$zshrc" | cut -d: -f1)
+    source_line=$(grep -n -F -x -- "$source_statement" "$zshrc" | cut -d: -f1)
     [ "$cache_line" -lt "$source_line" ] || \
         fail "expected ZSH_CACHE_DIR export before Oh My Zsh source"
     [ "$compdump_line" -lt "$source_line" ] || \

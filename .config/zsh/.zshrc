@@ -1,6 +1,8 @@
 ## ohmyzsh
 export ZSH="$HOME/.config/zsh/oh-my-zsh"
 export ZSH_CUSTOM="$HOME/.config/zsh/custom"
+export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"
+export ZSH_COMPDUMP="$ZSH_CACHE_DIR/.zcompdump-${ZSH_VERSION}"
 ZSH_THEME="robbyrussell"
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 if [ -f "$ZSH/oh-my-zsh.sh" ]; then

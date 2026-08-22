@@ -141,7 +141,7 @@ test_mise_lock_has_supported_platform_artifacts() {
     assert_eq '18' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
-        assert_eq '15' \
+        assert_eq '16' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
             "all ordinary downloadable tools must lock $platform"
     done

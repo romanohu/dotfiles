@@ -28,11 +28,11 @@ a successful installation.
 
 ## Supported and managed tools
 
-mise manages these 17 tools:
+mise manages these 18 tools:
 
 - starship 1.24.2, fzf 0.71.0, ripgrep 15.1.0, bat 0.26.1, fd 10.4.2, and gh
   2.89.0;
-- uv 0.11.6, tmux 3.6a, pueue 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
+- uv 0.11.6, tmux 3.6a, pueue 4.0.4, pueued 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
   node 24.12.0, zoxide 0.9.8, and Herdr 0.7.5;
 - dua 2.34.0, built from source by Cargo as `cargo:dua-cli`; and
 - Rust 1.97.1 with the minimal profile and the exact `clippy`, `rustfmt`, and
@@ -40,6 +40,19 @@ mise manages these 17 tools:
 
 `htop` is unmanaged by this repository.
 `eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed and are not installation targets.
+
+### Pueue client and daemon
+
+The bootstrap installs the matching Pueue client and daemon but does not start a background service. Start the daemon manually when needed, then
+verify the client connection:
+
+```sh
+pueued -d
+pueue status
+```
+
+Keep both binaries at the same pinned version (`4.0.4`). Existing daemons
+and sockets are not stopped or removed by this repository.
 
 Most managed tools have per-platform artifact URLs and checksums in
 `mise.lock`. Rust uses mise's core rustup backend, and dua is source-built by

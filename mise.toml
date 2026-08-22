@@ -52,6 +52,7 @@ matching_regex = "^pueued-"
 "~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"
 "~/.config/opencode/opencode.jsonc" = ".config/opencode/opencode.jsonc"
 "~/.config/opencode/tui.json" = ".config/opencode/tui.json"
+"~/.config/opencode/AGENTS.md" = ".config/opencode/AGENTS.md"
 "~/.codex/AGENTS.md" = ".codex/AGENTS.md"
 "~/.claude/CLAUDE.md" = ".claude/CLAUDE.md"
 

@@ -77,19 +77,21 @@ Devbox installations. It also does not uninstall other existing tool copies.
 
 An unmanaged dotfile conflict stops bootstrap. Move or back up that file
 manually, then rerun `./install.sh`; the installer will not overwrite it on
-your behalf. Before invoking mise, the installer checks all twelve managed targets
+your behalf. Before invoking mise, the installer checks all thirteen managed targets
 and their existing ancestors. It accepts only a missing target or the exact
 repository symlink, and rejects symlinked ancestors without traversing them.
 It does not edit `~/.profile`.
 
 ## OpenCode permissions
 
-The repository manages `~/.config/opencode/opencode.jsonc` and
-`~/.config/opencode/tui.json`. The latter uses OpenCode's system theme, which
-inherits the terminal's colors and background. The shared superpowers plugin
-remains enabled, and the repository sets OpenCode's default permission mode to
-`allow`. Codex configuration and approval behavior remain user-owned and are
-not changed by this repository.
+The repository manages `~/.config/opencode/opencode.jsonc`,
+`~/.config/opencode/tui.json`, and its OpenCode global rules file at
+`~/.config/opencode/AGENTS.md`. It shares the implementation guidelines used
+by Codex and Claude. The TUI file uses OpenCode's system theme, which inherits
+the terminal's colors and background. The shared superpowers plugin remains
+enabled, and the repository sets OpenCode's default permission mode to `allow`.
+Codex configuration and approval behavior remain user-owned and are not changed
+by this repository.
 
 ## Shell and Herdr usage
 

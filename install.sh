@@ -408,6 +408,9 @@ preflight_managed_dotfiles() {
         "$TARGET_HOME/.config/opencode/tui.json" \
         "$DOT_DIR/.config/opencode/tui.json" || return 1
     validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/opencode/AGENTS.md" \
+        "$DOT_DIR/.config/opencode/AGENTS.md" || return 1
+    validate_managed_dotfile_target \
         "$TARGET_HOME/.codex/AGENTS.md" "$DOT_DIR/.codex/AGENTS.md" || return 1
     validate_managed_dotfile_target \
         "$TARGET_HOME/.claude/CLAUDE.md" "$DOT_DIR/.claude/CLAUDE.md" || return 1

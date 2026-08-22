@@ -138,10 +138,6 @@ test_readme_documents_mise_setup_and_boundaries() {
         '`eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed and are not installation targets.' \
         "$readme")" \
         'README must list the exact removed tools, including eza, on one line'
-    assert_eq '1' "$(grep -F -x -c -- \
-        '`zoxide` is the backend-specific exception: its three locked platform URLs do not include checksums.' \
-        "$readme")" \
-        'README must document the three zoxide checksum exceptions exactly'
     assert_file_not_contains "$readme" 'devbox run'
     assert_file_not_contains "$readme" 'devbox install'
     assert_file_not_contains "$readme" 'NIX_INSTALLER'
@@ -149,6 +145,7 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_not_contains "$readme" '`ha`'
     assert_file_not_contains "$readme" 'local.lua'
     assert_file_not_contains "$readme" 'SSH'
+    assert_file_not_contains "$readme" 'zoxide'
     assert_file_contains "$readme" 'WezTerm visual settings'
 }
 
@@ -170,9 +167,7 @@ test_daily_shell_and_git_defaults_are_safe_and_pinned() {
     local aliases="$REPO_DIR/.config/zsh/aliases.zsh"
     local git_config="$REPO_DIR/.config/git/config"
 
-    assert_file_contains "$zshrc" 'command -v zoxide > /dev/null 2>&1'
-    assert_file_contains "$zshrc" '[ -n "${ZSH_VERSION:-}" ]'
-    assert_file_contains "$zshrc" 'eval "$(zoxide init zsh)"'
+    assert_file_not_contains "$zshrc" 'zoxide'
     assert_file_contains "$aliases" 'gcof()'
     assert_file_contains "$aliases" 'git for-each-ref'
     assert_file_contains "$aliases" 'git switch -- "$branch"'

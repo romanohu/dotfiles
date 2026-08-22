@@ -305,19 +305,3 @@ url_api = "https://api.github.com/repos/sachaos/viddy/releases/assets/209763328"
 checksum = "sha256:4b06276180ae713970e1d729f0aa2e9c0c1f4818074d14f76a26df69283582f5"
 url = "https://github.com/sachaos/viddy/releases/download/v1.3.0/viddy-v1.3.0-macos-arm64.tar.gz"
 url_api = "https://api.github.com/repos/sachaos/viddy/releases/assets/209762991"
-
-[[tools.zoxide]]
-version = "0.9.8"
-backend = "aqua:ajeetdsouza/zoxide"
-
-[tools.zoxide."platforms.linux-arm64"]
-url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.8/zoxide-0.9.8-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/ajeetdsouza/zoxide/releases/assets/258335142"
-
-[tools.zoxide."platforms.linux-x64"]
-url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.8/zoxide-0.9.8-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/ajeetdsouza/zoxide/releases/assets/258335140"
-
-[tools.zoxide."platforms.macos-arm64"]
-url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.8/zoxide-0.9.8-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/ajeetdsouza/zoxide/releases/assets/258335957"

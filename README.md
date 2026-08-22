@@ -28,12 +28,12 @@ a successful installation.
 
 ## Supported and managed tools
 
-mise manages these 18 tools:
+mise manages these 17 tools:
 
 - starship 1.24.2, fzf 0.71.0, ripgrep 15.1.0, bat 0.26.1, fd 10.4.2, and gh
   2.89.0;
 - uv 0.11.6, tmux 3.6a, pueue 4.0.4, pueued 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
-  node 24.12.0, zoxide 0.9.8, and Herdr 0.7.5;
+  node 24.12.0, and Herdr 0.7.5;
 - dua 2.34.0, built from source by Cargo as `cargo:dua-cli`; and
 - Rust 1.97.1 with the minimal profile and the exact `clippy`, `rustfmt`, and
   `rust-analyzer` components.
@@ -59,8 +59,6 @@ Most managed tools have per-platform artifact URLs and checksums in
 Cargo after that pinned Rust installation; therefore those two do not have
 per-platform distribution URL/checksum entries in `mise.lock`. The lockfile
 does not promise that every managed tool is a prebuilt artifact.
-
-`zoxide` is the backend-specific exception: its three locked platform URLs do not include checksums.
 
 ## ABCI and other managed Linux hosts
 
@@ -93,8 +91,7 @@ not changed by this repository.
 
 ## Shell and Herdr usage
 
-Open a new shell with Zsh after installation. zoxide enables `z` in an
-interactive Zsh shell when it is available. The `gcof` and `glogf` helpers use
+Open a new shell with Zsh after installation. The `gcof` and `glogf` helpers use
 fzf when available and otherwise return without changing state.
 
 Start or reattach a project session with:

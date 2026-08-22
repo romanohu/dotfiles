@@ -26,10 +26,6 @@ if command -v starship > /dev/null 2>&1; then
     eval "$(starship init zsh)"
 fi
 
-if command -v zoxide > /dev/null 2>&1 && [ -n "${ZSH_VERSION:-}" ]; then
-    eval "$(zoxide init zsh)"
-fi
-
 setopt hist_ignore_all_dups  # 重複したヒストリを無視
 setopt share_history         # ターミナル間でヒストリを共有
 

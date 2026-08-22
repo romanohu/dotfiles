@@ -88,7 +88,6 @@ test_mise_tools_are_exact_and_complete() {
         'viddy = "1.3.0"' \
         'jq = "1.7.1"' \
         'node = "24.12.0"' \
-        'zoxide = "0.9.8"' \
         'herdr = "0.7.5"' \
         'rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer" }')
     actual=$(mise_tool_entries "$REPO_DIR/mise.toml")
@@ -132,21 +131,20 @@ test_mise_lock_has_supported_platform_artifacts() {
         $'starship\t1.24.2' \
         $'tmux\t3.6a' \
         $'uv\t0.11.6' \
-        $'viddy\t1.3.0' \
-        $'zoxide\t0.9.8')
+        $'viddy\t1.3.0')
     actual=$(mise_lock_tool_entries "$lock")
     assert_eq "$expected" "$actual" \
         'mise.lock must pin the exact configured tool names and versions'
 
-    assert_eq '18' "$(grep -c '^\[\[tools\.' "$lock")" \
+    assert_eq '17' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
-        assert_eq '16' \
+        assert_eq '15' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
             "all ordinary downloadable tools must lock $platform"
     done
-    assert_eq '48' "$(grep -c '^url = "https://' "$lock")" \
-        '16 ordinary downloadable tools times 3 platforms must have URLs'
+    assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
+        '15 ordinary downloadable tools times 3 platforms must have URLs'
     checksum_shape=$(awk '
         /^checksum = / {
             count++
@@ -171,13 +169,9 @@ test_mise_lock_has_supported_platform_artifacts() {
     ' "$lock"; then
         fail 'pueue lock entries must not select pueued assets'
     fi
-    expected=$(printf '%s\n' \
-        '[tools.zoxide."platforms.linux-arm64"]' \
-        '[tools.zoxide."platforms.linux-x64"]' \
-        '[tools.zoxide."platforms.macos-arm64"]')
     actual=$(lock_url_sections_without_checksum "$lock")
-    assert_eq "$expected" "$actual" \
-        'only the three zoxide backend platform entries may omit checksums'
+    assert_eq '' "$actual" \
+        'every locked platform entry must include a checksum'
     assert_file_contains "$lock" '[[tools."cargo:dua-cli"]]'
     assert_file_contains "$lock" 'backend = "cargo:dua-cli"'
     assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'

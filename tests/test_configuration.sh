@@ -85,6 +85,12 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'clippy'
     assert_file_contains "$readme" 'rustfmt'
     assert_file_contains "$readme" 'rust-analyzer'
+    assert_file_contains "$readme" 'pueue 4.0.4'
+    assert_file_contains "$readme" 'pueued 4.0.4'
+    assert_file_contains "$readme" 'pueued -d'
+    assert_file_contains "$readme" 'pueue status'
+    assert_file_contains "$readme" \
+        'The bootstrap installs the matching Pueue client and daemon but does not start a background service.'
     assert_file_contains "$readme" 'does not uninstall'
     assert_file_contains "$readme" 'conflict'
     assert_file_contains "$readme" '~/.profile'

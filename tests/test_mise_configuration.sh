@@ -83,7 +83,6 @@ test_mise_tools_are_exact_and_complete() {
         'gh = "2.89.0"' \
         'uv = "0.11.6"' \
         'tmux = "3.6a"' \
-        '"github:Nukesor/pueue" = "4.0.4"' \
         'git-lfs = "3.7.1"' \
         '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }' \
         'viddy = "1.3.0"' \
@@ -94,6 +93,23 @@ test_mise_tools_are_exact_and_complete() {
         'rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer" }')
     actual=$(mise_tool_entries "$REPO_DIR/mise.toml")
     assert_eq "$expected" "$actual" 'mise must manage the exact approved tool set'
+
+    expected=$(printf '%s\n' \
+        'pueue = "github:Nukesor/pueue"' \
+        'pueued = "github:Nukesor/pueue"')
+    actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[tool_alias]')
+    assert_eq "$expected" "$actual" \
+        '[tool_alias] must contain exactly the approved Pueue aliases'
+
+    expected=$'version = "4.0.4"\nmatching_regex = "^pueue-"'
+    actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[tools.pueue]')
+    assert_eq "$expected" "$actual" \
+        '[tools.pueue] must pin and select the Pueue client asset'
+
+    expected=$'version = "4.0.4"\nmatching_regex = "^pueued-"'
+    actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[tools.pueued]')
+    assert_eq "$expected" "$actual" \
+        '[tools.pueued] must pin and select the Pueue daemon asset'
 }
 
 test_mise_lock_has_supported_platform_artifacts() {
@@ -106,10 +122,11 @@ test_mise_lock_has_supported_platform_artifacts() {
         $'fzf\t0.71.0' \
         $'gh\t2.89.0' \
         $'git-lfs\t3.7.1' \
-        $'github:Nukesor/pueue\t4.0.4' \
         $'herdr\t0.7.5' \
         $'jq\t1.7.1' \
         $'node\t24.12.0' \
+        $'pueue\t4.0.4' \
+        $'pueued\t4.0.4' \
         $'ripgrep\t15.1.0' \
         $'rust\t1.97.1' \
         $'starship\t1.24.2' \
@@ -121,15 +138,15 @@ test_mise_lock_has_supported_platform_artifacts() {
     assert_eq "$expected" "$actual" \
         'mise.lock must pin the exact configured tool names and versions'
 
-    assert_eq '17' "$(grep -c '^\[\[tools\.' "$lock")" \
+    assert_eq '18' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
         assert_eq '15' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
             "all ordinary downloadable tools must lock $platform"
     done
-    assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
-        '15 ordinary downloadable tools times 3 platforms must have URLs'
+    assert_eq '48' "$(grep -c '^url = "https://' "$lock")" \
+        '16 ordinary downloadable tools times 3 platforms must have URLs'
     checksum_shape=$(awk '
         /^checksum = / {
             count++
@@ -140,8 +157,20 @@ test_mise_lock_has_supported_platform_artifacts() {
         }
         END { print count "\t" (invalid + 0) }
     ' "$lock")
-    assert_eq $'42\t0' "$checksum_shape" \
-        'mise.lock must contain exactly 42 valid lowercase SHA-256 checksums'
+    assert_eq $'45\t0' "$checksum_shape" \
+        'mise.lock must contain exactly 45 valid lowercase SHA-256 checksums'
+    assert_eq '3' "$(grep -c '^url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-' "$lock")" \
+        'mise.lock must contain one client asset URL per supported platform'
+    assert_eq '3' "$(grep -c '^url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueued-' "$lock")" \
+        'mise.lock must contain one daemon asset URL per supported platform'
+    if awk '
+        /^\[tools\.pueue\."platforms\./ { in_pueue = 1; next }
+        /^\[/ { in_pueue = 0 }
+        in_pueue && /^url = / && /pueued-/ { found = 1 }
+        END { exit found ? 0 : 1 }
+    ' "$lock"; then
+        fail 'pueue lock entries must not select pueued assets'
+    fi
     expected=$(printf '%s\n' \
         '[tools.zoxide."platforms.linux-arm64"]' \
         '[tools.zoxide."platforms.linux-x64"]' \

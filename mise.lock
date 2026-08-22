@@ -102,25 +102,6 @@ checksum = "sha256:76260fb34f4ee622ff0a66b857e5954aa49c7e343a92e57a1ec4a760618c9
 url = "https://github.com/git-lfs/git-lfs/releases/download/v3.7.1/git-lfs-darwin-arm64-v3.7.1.zip"
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/305262593"
 
-[[tools."github:Nukesor/pueue"]]
-version = "4.0.4"
-backend = "github:Nukesor/pueue"
-
-[tools."github:Nukesor/pueue"."platforms.linux-arm64"]
-checksum = "sha256:759bf5100a51024997111c6913aaf3330a0cdfd893ff552dcf429ae9b5e01e09"
-url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-aarch64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285502"
-
-[tools."github:Nukesor/pueue"."platforms.linux-x64"]
-checksum = "sha256:c1b10d7e4e62211075ddd0e1dc3e8cbfc5a43d662cb3be7402a28504e23fcb51"
-url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-x86_64-unknown-linux-musl"
-url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285200"
-
-[tools."github:Nukesor/pueue"."platforms.macos-arm64"]
-checksum = "sha256:7780dbd21e3a4106e88a57396d6dc2dbcbbae253c7e00d92d994902896b8cb82"
-url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285312"
-
 [[tools.herdr]]
 version = "0.7.5"
 backend = "aqua:herdrdev/herdr"
@@ -174,6 +155,50 @@ url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-linux-x64.tar.gz"
 [tools.node."platforms.macos-arm64"]
 checksum = "sha256:319f221adc5e44ff0ed57e8a441b2284f02b8dc6fc87b8eb92a6a93643fd8080"
 url = "https://nodejs.org/dist/v24.12.0/node-v24.12.0-darwin-arm64.tar.gz"
+
+[[tools.pueue]]
+version = "4.0.4"
+backend = "github:Nukesor/pueue"
+
+[tools.pueue.options]
+matching_regex = "^pueue-"
+
+[tools.pueue."platforms.linux-arm64"]
+checksum = "sha256:759bf5100a51024997111c6913aaf3330a0cdfd893ff552dcf429ae9b5e01e09"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285502"
+
+[tools.pueue."platforms.linux-x64"]
+checksum = "sha256:c1b10d7e4e62211075ddd0e1dc3e8cbfc5a43d662cb3be7402a28504e23fcb51"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285200"
+
+[tools.pueue."platforms.macos-arm64"]
+checksum = "sha256:7780dbd21e3a4106e88a57396d6dc2dbcbbae253c7e00d92d994902896b8cb82"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285312"
+
+[[tools.pueued]]
+version = "4.0.4"
+backend = "github:Nukesor/pueue"
+
+[tools.pueued.options]
+matching_regex = "^pueued-"
+
+[tools.pueued."platforms.linux-arm64"]
+checksum = "sha256:332c5ef74270b64aeaf04894c8c04826f3422eb7d50dbd1a8e0706d74a42f653"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueued-aarch64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285517"
+
+[tools.pueued."platforms.linux-x64"]
+checksum = "sha256:5afeff6adbafb909e8d54e2caff158e6966c2adffa2c09e60fd631cc51b60390"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueued-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285224"
+
+[tools.pueued."platforms.macos-arm64"]
+checksum = "sha256:bf5a1151d70c328dd036fb6d786fba53a68d8574c12391d04db3d08b04079205"
+url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueued-aarch64-apple-darwin"
+url_api = "https://api.github.com/repos/Nukesor/pueue/releases/assets/365285337"
 
 [[tools.ripgrep]]
 version = "15.1.0"

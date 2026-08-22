@@ -79,10 +79,17 @@ Devbox installations. It also does not uninstall other existing tool copies.
 
 An unmanaged dotfile conflict stops bootstrap. Move or back up that file
 manually, then rerun `./install.sh`; the installer will not overwrite it on
-your behalf. Before invoking mise, the installer checks all ten managed targets
+your behalf. Before invoking mise, the installer checks all eleven managed targets
 and their existing ancestors. It accepts only a missing target or the exact
 repository symlink, and rejects symlinked ancestors without traversing them.
 It does not edit `~/.profile`.
+
+## OpenCode permissions
+
+The repository manages `~/.config/opencode/opencode.jsonc`, keeps the shared
+superpowers plugin enabled, and sets OpenCode's default permission mode to
+`allow`. Codex configuration and approval behavior remain user-owned and are
+not changed by this repository.
 
 ## Shell and Herdr usage
 
@@ -190,6 +197,7 @@ ${EDITOR:-vi} ~/.profile
 ├── .config
 │   ├── git
 │   ├── herdr
+│   ├── opencode
 │   ├── vscode
 │   ├── wezterm
 │   └── zsh

@@ -95,6 +95,11 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'conflict'
     assert_file_contains "$readme" '~/.profile'
     assert_file_contains "$readme" 'Herdr'
+    assert_file_contains "$readme" 'OpenCode permissions'
+    assert_file_contains "$readme" 'permission mode to'
+    assert_file_contains "$readme" 'all eleven managed targets'
+    assert_file_contains "$readme" \
+        'Codex configuration and approval behavior remain user-owned'
     assert_eq '1' "$(grep -F -x -c -- \
         '`htop` is unmanaged by this repository.' "$readme")" \
         'README must identify htop, and only htop, as unmanaged'

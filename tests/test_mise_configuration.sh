@@ -81,13 +81,13 @@ test_mise_tools_are_exact_and_complete() {
         'bat = "0.26.1"' \
         'fd = "10.4.2"' \
         'gh = "2.89.0"' \
-        'uv = "0.11.6"' \
+        'uv = "0.13.4"' \
         'tmux = "3.6a"' \
         'git-lfs = "3.7.1"' \
         '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }' \
         'viddy = "1.3.0"' \
         'jq = "1.7.1"' \
-        'node = "24.12.0"' \
+        'node = "24.22.1"' \
         'herdr = "0.7.5"' \
         'rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer" }')
     actual=$(mise_tool_entries "$REPO_DIR/mise.toml")
@@ -123,14 +123,14 @@ test_mise_lock_has_supported_platform_artifacts() {
         $'git-lfs\t3.7.1' \
         $'herdr\t0.7.5' \
         $'jq\t1.7.1' \
-        $'node\t24.12.0' \
+        $'node\t24.22.1' \
         $'pueue\t4.0.4' \
         $'pueued\t4.0.4' \
         $'ripgrep\t15.1.0' \
         $'rust\t1.97.1' \
         $'starship\t1.24.2' \
         $'tmux\t3.6a' \
-        $'uv\t0.11.6' \
+        $'uv\t0.13.4' \
         $'viddy\t1.3.0')
     actual=$(mise_lock_tool_entries "$lock")
     assert_eq "$expected" "$actual" \
@@ -213,7 +213,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
     assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
     assert_file_contains "$REPO_DIR/mise.toml" \
         '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }'
-    assert_file_contains "$REPO_DIR/mise.toml" 'min_version = "2026.8.9"'
+    assert_file_contains "$REPO_DIR/mise.toml" 'min_version = "2026.10.18"'
     assert_file_contains "$REPO_DIR/mise.toml" 'locked = true'
     assert_file_contains "$REPO_DIR/mise.toml" \
         'lockfile_platforms = ["macos-arm64", "linux-x64", "linux-arm64"]'

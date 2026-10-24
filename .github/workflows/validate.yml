@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.2.2
+      - name: Install Zsh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends zsh
       - run: |
           bash tests/run.sh
           bash -n install.sh tests/test_helpers.sh tests/test_installer.sh tests/test_configuration.sh tests/test_mise_configuration.sh tests/test_runner.sh tests/run.sh

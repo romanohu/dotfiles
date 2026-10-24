@@ -114,6 +114,7 @@ test_verified_installer_executes_only_after_hash_match() {
     local fixture="$TEST_ROOT/harmless-installer.sh"
     local marker="$TEST_ROOT/verified-installer-executed"
     local installer_home_marker="$TEST_ROOT/verified-installer-home"
+    local installer_version_marker="$TEST_ROOT/verified-installer-version"
     local temp_root="$TEST_ROOT/verified-installer-tmp"
     local target_home="$TEST_ROOT/verified-installer-target-home"
     local ambient_home="$TEST_ROOT/verified-installer-ambient-home"
@@ -124,12 +125,14 @@ test_verified_installer_executes_only_after_hash_match() {
     physical_target_home=$(CDPATH= cd -P -- "$target_home" && pwd -P)
     printf '%s\n' '#!/usr/bin/env bash' \
         ': > "$EXECUTED_MARKER"' \
-        'printf "%s\n" "$HOME" > "$EXECUTED_HOME_MARKER"' > "$fixture"
+        'printf "%s\n" "$HOME" > "$EXECUTED_HOME_MARKER"' \
+        'printf "%s\n" "${MISE_VERSION:-unset}" > "$EXECUTED_VERSION_MARKER"' > "$fixture"
     actual_sha="$(fixture_sha256 "$fixture")"
 
     (
         export EXECUTED_MARKER="$marker"
         export EXECUTED_HOME_MARKER="$installer_home_marker"
+        export EXECUTED_VERSION_MARKER="$installer_version_marker"
         export TEST_CURL_SOURCE="$fixture"
         export TMPDIR="$temp_root"
         export HOME="$ambient_home"
@@ -165,6 +168,8 @@ test_verified_installer_executes_only_after_hash_match() {
         assert_path_exists "$EXECUTED_MARKER"
         assert_eq "$physical_target_home" "$(cat "$EXECUTED_HOME_MARKER")" \
             'verified installer did not receive the physical target HOME'
+        assert_eq '2026.10.18' "$(cat "$EXECUTED_VERSION_MARKER")" \
+            'verified installer must receive the pinned mise version instead of selecting a release'
     )
 }
 
@@ -309,7 +314,7 @@ test_mise_install_passes_exact_url_hash_and_destination() {
             printf '%s\n' '#!/usr/bin/env bash' \
                 'if [ "${1:-}" = "--version" ]; then' \
                 '    printf "probe|%s\n" "$HOME" >> "$MISE_TEST_HOME_CALLS"' \
-                '    printf "%s\n" "2026.8.9 macos-arm64 (2026-08-19)"' \
+                '    printf "%s\n" "2026.10.18 macos-arm64 (2026-10-23)"' \
                 'fi' > "$MISE_INSTALL_PATH"
             chmod +x "$MISE_INSTALL_PATH"
         }
@@ -320,7 +325,7 @@ test_mise_install_passes_exact_url_hash_and_destination() {
     )
 
     assert_file_contains "$calls" \
-        "https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh|0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403|$physical_target_home/.local/bin/mise"
+        "https://github.com/jdx/mise/releases/download/v2026.10.18/install.sh|5c5d50685ad52c26a7fd691bda5505f6908a7953b2766fc5bd61d2ae3c4a2df1|$physical_target_home/.local/bin/mise"
     assert_file_contains "$home_calls" "installer|$physical_target_home"
     assert_file_contains "$home_calls" "probe|$physical_target_home"
     assert_eq '2' "$(grep -F -x -c -- "probe|$physical_target_home" "$home_calls")" \
@@ -389,7 +394,7 @@ test_mise_install_rejects_symlinked_destination_paths() {
     mkdir -p "$target_home/.local/bin" "$external"
     printf '%s\n' '#!/usr/bin/env bash' \
         ': > "$MISE_SYMLINK_PROBE_MARKER"' \
-        'printf "%s\n" "2026.8.9 macos-arm64 (2026-08-19)"' \
+        'printf "%s\n" "2026.10.18 macos-arm64 (2026-10-23)"' \
         > "$external/mise"
     chmod +x "$external/mise"
     ln -s "$external/mise" "$target_home/.local/bin/mise"
@@ -409,7 +414,7 @@ test_mise_install_rejects_symlinked_destination_paths() {
         fail 'mise installation accepted a symlinked binary destination'
     fi
     assert_link_points_to "$target_home/.local/bin/mise" "$external/mise"
-    assert_file_contains "$external/mise" '2026.8.9 macos-arm64'
+    assert_file_contains "$external/mise" '2026.10.18 macos-arm64'
     assert_file_not_contains "$external/mise" 'mutated'
     assert_path_missing "$TEST_ROOT/mise-symlink-probe-marker"
 }

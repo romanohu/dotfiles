@@ -5,7 +5,7 @@ Personal dotfiles for reproducible macOS and Linux setup with mise.
 ## Requirements
 
 Git and Zsh are preinstalled prerequisites. Bootstrap also requires Bash,
-curl, tar, and sha256sum or shasum. The installer verifies the pinned mise 2026.8.9
+curl, tar, and sha256sum or shasum. The installer verifies the pinned mise 2026.10.18
 installer, places mise under `~/.local/bin`, and runs without root privileges
 or sudo. macOS on Apple silicon and Linux on x86_64 and aarch64 are supported.
 
@@ -32,8 +32,8 @@ mise manages these 17 tools:
 
 - starship 1.24.2, fzf 0.71.0, ripgrep 15.1.0, bat 0.26.1, fd 10.4.2, and gh
   2.89.0;
-- uv 0.11.6, tmux 3.6a, pueue 4.0.4, pueued 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
-  node 24.12.0, and Herdr 0.7.5;
+- uv 0.13.4, tmux 3.6a, pueue 4.0.4, pueued 4.0.4, git-lfs 3.7.1, viddy 1.3.0, jq 1.7.1,
+  node 24.22.1, and Herdr 0.7.5;
 - dua 2.34.0, built from source by Cargo as `cargo:dua-cli`; and
 - Rust 1.97.1 with the minimal profile and the exact `clippy`, `rustfmt`, and
   `rust-analyzer` components.

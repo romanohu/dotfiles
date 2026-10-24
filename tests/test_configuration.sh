@@ -100,7 +100,7 @@ test_herdr_remains_without_ha_command() {
 test_readme_documents_mise_setup_and_boundaries() {
     local readme="$REPO_DIR/README.md"
 
-    assert_file_contains "$readme" 'mise 2026.8.9'
+    assert_file_contains "$readme" 'mise 2026.10.18'
     assert_file_contains "$readme" 'Git and Zsh'
     assert_file_contains "$readme" 'curl'
     assert_file_contains "$readme" 'tar'

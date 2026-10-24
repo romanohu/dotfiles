@@ -9,9 +9,9 @@ else
     TARGET_HOME_INPUT="$HOME"
 fi
 TARGET_HOME="$TARGET_HOME_INPUT"
-MISE_VERSION="2026.8.9"
-MISE_INSTALLER_URL="https://github.com/jdx/mise/releases/download/v2026.8.9/install.sh"
-MISE_INSTALLER_SHA256="0947cf3dd1eb5d734676a554b4bb8298f8557ffc706f5ed5637e9e68e1218403"
+MISE_VERSION="2026.10.18"
+MISE_INSTALLER_URL="https://github.com/jdx/mise/releases/download/v2026.10.18/install.sh"
+MISE_INSTALLER_SHA256="5c5d50685ad52c26a7fd691bda5505f6908a7953b2766fc5bd61d2ae3c4a2df1"
 MISE_BIN="$TARGET_HOME/.local/bin/mise"
 TARGET_HOME_RESOLVED=0
 VERIFIED_INSTALLER_SOURCE_SUBSHELL="${BASH_SUBSHELL:-0}"
@@ -191,7 +191,8 @@ run_verified_installer() {
         fi
     fi
     if [ "$status" -eq 0 ]; then
-        HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" bash "$installer_path" &
+        HOME="$TARGET_HOME" MISE_INSTALL_PATH="$MISE_BIN" MISE_VERSION="$MISE_VERSION" \
+            bash "$installer_path" &
         active_child_pid=$!
         if wait "$active_child_pid"; then
             status=0

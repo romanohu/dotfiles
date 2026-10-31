@@ -10,4 +10,5 @@
 - Reuse existing patterns and infrastructure before introducing new ones.
 - Avoid speculative handling for hypothetical future requirements.
 - Keep changes focused; do not refactor unrelated code unless necessary for correctness.
+- Do not casually use catchphrases or slogans; express ideas in plain, concrete language.
 - Apply these guidelines silently. Do not mention or restate them in responses unless they materially affect a design decision.

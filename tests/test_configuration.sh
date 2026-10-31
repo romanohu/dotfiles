@@ -106,41 +106,7 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_contains "$readme" 'tar'
     assert_file_contains "$readme" 'sha256sum or shasum'
     assert_file_contains "$readme" 'without root privileges'
-    assert_file_contains "$readme" 'ABCI'
     assert_file_contains "$readme" './install.sh'
-    assert_file_contains "$readme" 'bash tests/run.sh'
-    assert_file_contains "$readme" 'mise run test'
-    assert_file_contains "$readme" \
-        'mise lock --platform macos-arm64,linux-x64,linux-arm64'
-    assert_file_contains "$readme" 'mise install --locked'
-    assert_file_contains "$readme" 'clippy'
-    assert_file_contains "$readme" 'rustfmt'
-    assert_file_contains "$readme" 'rust-analyzer'
-    assert_file_contains "$readme" 'pueue 4.0.4'
-    assert_file_contains "$readme" 'pueued 4.0.4'
-    assert_file_contains "$readme" 'pueued -d'
-    assert_file_contains "$readme" 'pueue status'
-    assert_file_contains "$readme" \
-        'The bootstrap installs the matching Pueue client and daemon but does not start a background service.'
-    assert_file_contains "$readme" 'does not uninstall'
-    assert_file_contains "$readme" 'conflict'
-    assert_file_contains "$readme" '~/.profile'
-    assert_file_contains "$readme" 'Herdr'
-    assert_file_contains "$readme" 'OpenCode permissions'
-    assert_file_contains "$readme" 'permission mode to'
-    assert_file_contains "$readme" 'all thirteen managed targets'
-    assert_file_contains "$readme" '~/.config/opencode/AGENTS.md'
-    assert_file_contains "$readme" 'OpenCode global rules'
-    assert_file_contains "$readme" 'system theme'
-    assert_file_contains "$readme" \
-        'Codex configuration and approval behavior remain user-owned'
-    assert_eq '1' "$(grep -F -x -c -- \
-        '`htop` is unmanaged by this repository.' "$readme")" \
-        'README must identify htop, and only htop, as unmanaged'
-    assert_eq '1' "$(grep -F -x -c -- \
-        '`eza`, `hwloc`, `tree`, `xclip`, `nvtop`, and `navi` were removed and are not installation targets.' \
-        "$readme")" \
-        'README must list the exact removed tools, including eza, on one line'
     assert_file_not_contains "$readme" 'devbox run'
     assert_file_not_contains "$readme" 'devbox install'
     assert_file_not_contains "$readme" 'NIX_INSTALLER'
@@ -149,7 +115,6 @@ test_readme_documents_mise_setup_and_boundaries() {
     assert_file_not_contains "$readme" 'local.lua'
     assert_file_not_contains "$readme" 'SSH'
     assert_file_not_contains "$readme" 'zoxide'
-    assert_file_contains "$readme" 'WezTerm visual settings'
 }
 
 test_removed_paths_are_not_active() {

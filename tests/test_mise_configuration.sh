@@ -219,7 +219,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
     assert_file_not_contains "$REPO_DIR/mise.toml" 'eza'
     assert_file_contains "$REPO_DIR/mise.toml" \
         '"cargo:dua-cli" = { version = "2.34.0", depends = ["rust"] }'
-    assert_file_contains "$REPO_DIR/mise.toml" 'min_version = "2026.10.18"'
+    assert_file_contains "$REPO_DIR/mise.toml" 'min_version = "2026.10.17"'
     assert_file_contains "$REPO_DIR/mise.toml" 'locked = true'
     assert_file_contains "$REPO_DIR/mise.toml" \
         'lockfile_platforms = ["macos-arm64", "linux-x64", "linux-arm64"]'

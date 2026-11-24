@@ -168,7 +168,7 @@ test_verified_installer_executes_only_after_hash_match() {
         assert_path_exists "$EXECUTED_MARKER"
         assert_eq "$physical_target_home" "$(cat "$EXECUTED_HOME_MARKER")" \
             'verified installer did not receive the physical target HOME'
-        assert_eq '2026.10.18' "$(cat "$EXECUTED_VERSION_MARKER")" \
+        assert_eq '2026.10.17' "$(cat "$EXECUTED_VERSION_MARKER")" \
             'verified installer must receive the pinned mise version instead of selecting a release'
     )
 }
@@ -314,7 +314,7 @@ test_mise_install_passes_exact_url_hash_and_destination() {
             printf '%s\n' '#!/usr/bin/env bash' \
                 'if [ "${1:-}" = "--version" ]; then' \
                 '    printf "probe|%s\n" "$HOME" >> "$MISE_TEST_HOME_CALLS"' \
-                '    printf "%s\n" "2026.10.18 macos-arm64 (2026-10-23)"' \
+                '    printf "%s\n" "2026.10.17 macos-arm64 (2026-08-19)"' \
                 'fi' > "$MISE_INSTALL_PATH"
             chmod +x "$MISE_INSTALL_PATH"
         }
@@ -325,7 +325,7 @@ test_mise_install_passes_exact_url_hash_and_destination() {
     )
 
     assert_file_contains "$calls" \
-        "https://github.com/jdx/mise/releases/download/v2026.10.18/install.sh|5c5d50685ad52c26a7fd691bda5505f6908a7953b2766fc5bd61d2ae3c4a2df1|$physical_target_home/.local/bin/mise"
+        "https://github.com/jdx/mise/releases/download/v2026.10.17/install.sh|314162b17b5fe78e31d464416ab91ede17e9149aea4322f5f3539f1ebe46242f|$physical_target_home/.local/bin/mise"
     assert_file_contains "$home_calls" "installer|$physical_target_home"
     assert_file_contains "$home_calls" "probe|$physical_target_home"
     assert_eq '2' "$(grep -F -x -c -- "probe|$physical_target_home" "$home_calls")" \
@@ -394,7 +394,7 @@ test_mise_install_rejects_symlinked_destination_paths() {
     mkdir -p "$target_home/.local/bin" "$external"
     printf '%s\n' '#!/usr/bin/env bash' \
         ': > "$MISE_SYMLINK_PROBE_MARKER"' \
-        'printf "%s\n" "2026.10.18 macos-arm64 (2026-10-23)"' \
+        'printf "%s\n" "2026.10.17 macos-arm64 (2026-08-19)"' \
         > "$external/mise"
     chmod +x "$external/mise"
     ln -s "$external/mise" "$target_home/.local/bin/mise"
@@ -414,7 +414,7 @@ test_mise_install_rejects_symlinked_destination_paths() {
         fail 'mise installation accepted a symlinked binary destination'
     fi
     assert_link_points_to "$target_home/.local/bin/mise" "$external/mise"
-    assert_file_contains "$external/mise" '2026.10.18 macos-arm64'
+    assert_file_contains "$external/mise" '2026.10.17 macos-arm64'
     assert_file_not_contains "$external/mise" 'mutated'
     assert_path_missing "$TEST_ROOT/mise-symlink-probe-marker"
 }

@@ -5,7 +5,7 @@ Personal dotfiles for reproducible macOS and Linux setup with mise.
 ## Requirements
 
 Git and Zsh are preinstalled prerequisites. Bootstrap also requires Bash,
-curl, tar, and sha256sum or shasum. The installer verifies the pinned mise 2026.10.18
+curl, tar, and sha256sum or shasum. The installer verifies the pinned mise 2026.10.17
 installer, places mise under `~/.local/bin`, and runs without root privileges
 or sudo. macOS on Apple silicon and Linux on x86_64 and aarch64 are supported.
 

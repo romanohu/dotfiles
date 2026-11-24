@@ -91,7 +91,7 @@ test_herdr_remains_without_ha_command() {
     assert_file_contains "$config" 'default_shell = "zsh"'
     assert_file_contains "$config" 'new_cwd = "follow"'
     assert_file_contains "$config" '[ui]'
-    assert_file_contains "$config" 'agent_panel_sort = "spaces"'
+    assert_file_contains "$config" 'agent_panel_sort = "priority"'
     assert_file_not_contains "$config" '[[keys.command]]'
     assert_file_not_contains "$config" 'command = "ha"'
 }

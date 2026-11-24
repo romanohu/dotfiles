@@ -89,16 +89,19 @@ test_mise_tools_are_exact_and_complete() {
         'jq = "1.7.1"' \
         'node = "24.22.1"' \
         'herdr = "0.7.5"' \
-        'rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer" }')
+        'neovim = "0.12.6"' \
+        'tree-sitter = "0.27.2"' \
+        'rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer,rust-src" }')
     actual=$(mise_tool_entries "$REPO_DIR/mise.toml")
     assert_eq "$expected" "$actual" 'mise must manage the exact approved tool set'
 
     expected=$(printf '%s\n' \
+        'neovim = "aqua:neovim/neovim"' \
         'pueue = "github:Nukesor/pueue"' \
         'pueued = "github:Nukesor/pueue"')
     actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[tool_alias]')
     assert_eq "$expected" "$actual" \
-        '[tool_alias] must contain exactly the approved Pueue aliases'
+        '[tool_alias] must contain exactly the approved tool aliases'
 
     expected=$'version = "4.0.4"\nmatching_regex = "^pueue-"'
     actual=$(mise_section_entries "$REPO_DIR/mise.toml" '[tools.pueue]')
@@ -123,6 +126,7 @@ test_mise_lock_has_supported_platform_artifacts() {
         $'git-lfs\t3.7.1' \
         $'herdr\t0.7.5' \
         $'jq\t1.7.1' \
+        $'neovim\t0.12.6' \
         $'node\t24.22.1' \
         $'pueue\t4.0.4' \
         $'pueued\t4.0.4' \
@@ -130,21 +134,22 @@ test_mise_lock_has_supported_platform_artifacts() {
         $'rust\t1.97.1' \
         $'starship\t1.24.2' \
         $'tmux\t3.6a' \
+        $'tree-sitter\t0.27.2' \
         $'uv\t0.13.4' \
         $'viddy\t1.3.0')
     actual=$(mise_lock_tool_entries "$lock")
     assert_eq "$expected" "$actual" \
         'mise.lock must pin the exact configured tool names and versions'
 
-    assert_eq '17' "$(grep -c '^\[\[tools\.' "$lock")" \
+    assert_eq '19' "$(grep -c '^\[\[tools\.' "$lock")" \
         'mise.lock must contain one entry per managed tool'
     for platform in linux-arm64 linux-x64 macos-arm64; do
-        assert_eq '15' \
+        assert_eq '17' \
             "$(grep -c "platforms\\.$platform" "$lock")" \
             "all ordinary downloadable tools must lock $platform"
     done
-    assert_eq '45' "$(grep -c '^url = "https://' "$lock")" \
-        '15 ordinary downloadable tools times 3 platforms must have URLs'
+    assert_eq '51' "$(grep -c '^url = "https://' "$lock")" \
+        '17 ordinary downloadable tools times 3 platforms must have URLs'
     checksum_shape=$(awk '
         /^checksum = / {
             count++
@@ -155,8 +160,8 @@ test_mise_lock_has_supported_platform_artifacts() {
         }
         END { print count "\t" (invalid + 0) }
     ' "$lock")
-    assert_eq $'45\t0' "$checksum_shape" \
-        'mise.lock must contain exactly 45 valid lowercase SHA-256 checksums'
+    assert_eq $'51\t0' "$checksum_shape" \
+        'mise.lock must contain exactly 51 valid lowercase SHA-256 checksums'
     assert_eq '3' "$(grep -c '^url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueue-' "$lock")" \
         'mise.lock must contain one client asset URL per supported platform'
     assert_eq '3' "$(grep -c '^url = "https://github.com/Nukesor/pueue/releases/download/v4.0.4/pueued-' "$lock")" \
@@ -177,7 +182,7 @@ test_mise_lock_has_supported_platform_artifacts() {
     assert_file_not_contains "$lock" '[tools."cargo:dua-cli"."platforms.'
     assert_file_not_contains "$lock" '[tools.rust."platforms.'
     assert_file_contains "$lock" '[[tools.rust]]'
-    assert_file_contains "$lock" 'components = "clippy,rust-analyzer,rustfmt"'
+    assert_file_contains "$lock" 'components = "clippy,rust-analyzer,rust-src,rustfmt"'
     assert_file_contains "$lock" 'profile = "minimal"'
 }
 
@@ -198,6 +203,7 @@ test_mise_bootstrap_repositories_dotfiles_and_settings_are_exact() {
         '"~/.zshenv" = ".zshenv"' \
         '"~/.config/git" = ".config/git"' \
         '"~/.config/herdr" = ".config/herdr"' \
+        '"~/.config/nvim" = ".config/nvim"' \
         '"~/.config/zsh/.zshrc" = ".config/zsh/.zshrc"' \
         '"~/.config/zsh/aliases.zsh" = ".config/zsh/aliases.zsh"' \
         '"~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"' \

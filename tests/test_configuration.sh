@@ -7,8 +7,7 @@ REPO_DIR=$(CDPATH= cd -- "$TEST_DIR/.." && pwd)
 # shellcheck source=test_helpers.sh
 . "$TEST_DIR/test_helpers.sh"
 
-test_neovim_configuration_is_not_tracked() {
-    assert_path_missing "$REPO_DIR/.config/nvim"
+test_neovim_runtime_state_is_not_tracked() {
     assert_path_missing "$REPO_DIR/nvim.log"
 }
 
@@ -243,7 +242,7 @@ test_tracked_private_state_and_historical_wezterm_hosts_are_absent() {
     fi
 }
 
-test_neovim_configuration_is_not_tracked
+test_neovim_runtime_state_is_not_tracked
 test_public_agent_guidance_excludes_runtime_state
 test_shell_uses_mise_without_devbox_or_cargo_path
 test_opencode_system_theme_is_shared

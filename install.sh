@@ -331,6 +331,8 @@ preflight_managed_dotfiles() {
     validate_managed_dotfile_target \
         "$TARGET_HOME/.config/herdr" "$DOT_DIR/.config/herdr" || return 1
     validate_managed_dotfile_target \
+        "$TARGET_HOME/.config/nvim" "$DOT_DIR/.config/nvim" || return 1
+    validate_managed_dotfile_target \
         "$TARGET_HOME/.config/zsh/.zshrc" "$DOT_DIR/.config/zsh/.zshrc" || return 1
     validate_managed_dotfile_target \
         "$TARGET_HOME/.config/zsh/aliases.zsh" "$DOT_DIR/.config/zsh/aliases.zsh" || return 1
@@ -403,8 +405,6 @@ cleanup_legacy_managed_links() {
         "$TARGET_HOME/.local/share/devbox/global/default" \
         "$TARGET_HOME/.config/devbox/global" \
         "$DOT_DIR/.config/devbox/global" || return 1
-    remove_exact_managed_link \
-        "$TARGET_HOME/.config/nvim" "$DOT_DIR/.config/nvim" || return 1
     remove_exact_managed_link \
         "$TARGET_HOME/.config/zsh/pet.zsh" \
         "$DOT_DIR/.config/zsh/pet.zsh" || return 1

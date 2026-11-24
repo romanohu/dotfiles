@@ -26,6 +26,12 @@ managed dotfiles, clones the pinned Zsh framework and plugin sources, and
 installs the locked tools for the current platform. It is safe to rerun after
 a successful installation.
 
+Run `nvim` to open LazyVim with a transparent Tokyonight theme, including
+sidebars and floating windows. The first launch downloads plugins and builds
+syntax parsers, so it requires network access and a C compiler.
+LazyVim installs Pyright through Mason for Python. C/C++ support uses `clangd`
+from `PATH`, and Rust support uses `rust-analyzer` from the mise toolchain.
+
 ## Repository layout
 
 ```text
@@ -33,6 +39,7 @@ a successful installation.
 ├── .config
 │   ├── git
 │   ├── herdr
+│   ├── nvim
 │   ├── opencode
 │   ├── wezterm
 │   └── zsh

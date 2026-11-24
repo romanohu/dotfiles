@@ -8,6 +8,7 @@ dotfiles.default_mode = "symlink"
 task.run_auto_install = false
 
 [tool_alias]
+neovim = "aqua:neovim/neovim"
 pueue = "github:Nukesor/pueue"
 pueued = "github:Nukesor/pueue"
 
@@ -26,7 +27,9 @@ viddy = "1.3.0"
 jq = "1.7.1"
 node = "24.22.1"
 herdr = "0.7.5"
-rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer" }
+neovim = "0.12.6"
+tree-sitter = "0.27.2"
+rust = { version = "1.97.1", profile = "minimal", components = "clippy,rustfmt,rust-analyzer,rust-src" }
 
 [tools.pueue]
 version = "4.0.4"
@@ -47,6 +50,7 @@ matching_regex = "^pueued-"
 "~/.zshenv" = ".zshenv"
 "~/.config/git" = ".config/git"
 "~/.config/herdr" = ".config/herdr"
+"~/.config/nvim" = ".config/nvim"
 "~/.config/zsh/.zshrc" = ".config/zsh/.zshrc"
 "~/.config/zsh/aliases.zsh" = ".config/zsh/aliases.zsh"
 "~/.config/wezterm/wezterm.lua" = ".config/wezterm/wezterm.lua"

@@ -567,6 +567,7 @@ test_exact_managed_dotfile_links_are_idempotent() {
         '.zshenv' '.zshenv' \
         '.config/git' '.config/git' \
         '.config/herdr' '.config/herdr' \
+        '.config/nvim' '.config/nvim' \
         '.config/zsh/.zshrc' '.config/zsh/.zshrc' \
         '.config/zsh/aliases.zsh' '.config/zsh/aliases.zsh' \
         '.config/wezterm/wezterm.lua' '.config/wezterm/wezterm.lua' \
@@ -591,7 +592,7 @@ test_exact_managed_dotfile_links_are_idempotent() {
         preflight_managed_dotfiles
     )
 
-    assert_eq '13' "$(find "$target_home" -type l | wc -l | tr -d ' ')" \
+    assert_eq '14' "$(find "$target_home" -type l | wc -l | tr -d ' ')" \
         'correct managed links changed during repeated preflight'
     assert_link_points_to "$target_home/.config/mise/config.toml" "$REPO_DIR/mise.toml"
     assert_link_points_to "$target_home/.claude/CLAUDE.md" "$REPO_DIR/.claude/CLAUDE.md"
@@ -609,6 +610,7 @@ test_each_managed_dotfile_target_is_preflighted() {
         '.zshenv' \
         '.config/git' \
         '.config/herdr' \
+        '.config/nvim' \
         '.config/zsh/.zshrc' \
         '.config/zsh/aliases.zsh' \
         '.config/wezterm/wezterm.lua' \
@@ -634,7 +636,7 @@ test_each_managed_dotfile_target_is_preflighted() {
         assert_eq "preserve target $index" "$(cat "$target")" \
             "preflight changed rejected managed target: $relative"
     done
-    assert_eq '13' "$index" 'managed-target preflight fixture count changed'
+    assert_eq '14' "$index" 'managed-target preflight fixture count changed'
 }
 
 test_bootstrap_uses_exact_binary_target_home_and_root_config() {
@@ -697,7 +699,7 @@ test_only_exact_legacy_links_are_removed() {
     assert_path_missing "$target_home/.local/bin/ha"
     assert_path_missing "$target_home/.config/devbox"
     assert_path_missing "$target_home/.local/share/devbox/global/default"
-    assert_path_missing "$target_home/.config/nvim"
+    assert_link_points_to "$target_home/.config/nvim" "$physical_repo/.config/nvim"
     assert_path_missing "$target_home/.config/zsh/pet.zsh"
 
     ln -s "$physical_repo/.config/devbox/global" \
